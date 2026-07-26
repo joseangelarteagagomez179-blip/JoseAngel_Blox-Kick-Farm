@@ -1,7 +1,7 @@
 -- ======================================================
 -- Script: ✨ JoseAngel_Blox Kick ✨
 -- Creado por: JoseAngel_Blox
--- Fecha: 26/07/2026 | Versión: 1.6 (Todo Corregido)
+-- Fecha: 26/07/2026 | Versión: 1.9 (Remotos Oficiales)
 -- ======================================================
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -18,7 +18,6 @@ local Window = Rayfield:CreateWindow({
 local player = game.Players.LocalPlayer
 local character, humanoid, hrp
 
--- ✅ ACTUALIZAR PERSONAJE AL RESPAWNEAR
 local function actualizarChar()
     character = player.Character or player.CharacterAdded:Wait()
     humanoid = character:WaitForChild("Humanoid")
@@ -36,9 +35,9 @@ local InfoTab = Window:CreateTab("1) info ↓", 4483362458)
 InfoTab:CreateSection("📌 Información del Script")
 InfoTab:CreateLabel("👨‍💻 Creador: JoseAngel_Blox")
 InfoTab:CreateLabel("📅 Fecha: 26/07/2026")
-InfoTab:CreateLabel("🚀 Versión: 1.6")
+InfoTab:CreateLabel("🚀 Versión: 1.9")
 InfoTab:CreateSection("👋 Mensaje")
-InfoTab:CreateParagraph({Title = "✨ ¡Todo Arreglado! ✨", Content = "Solo pesas, clic automático y recoger dinero 😉"})
+InfoTab:CreateParagraph({Title = "✨ ¡Remotos Oficiales! ✨", Content = "Todos sacados directamente de Dex Explorer 😉"})
 
 -- ==================== 2) MAIN ↓ ====================
 local MainTab = Window:CreateTab("2) Main ↓", 4483362458)
@@ -51,102 +50,74 @@ MainTab:CreateToggle({Name = "👟 Auto Kick", CurrentValue = false, Flag = "Aut
     task.spawn(function() while autoKick do pcall(function() local r = getRemote("rev_KickEvent") if r then r:FireServer() end end) task.wait(0.05) end end)
 end})
 
--- 🏋️ Auto Weight ✅ SOLO EQUIPA PESAS, IGNORA BRAINROTS
+-- 🏋️ Auto Weight ✅ REMOTOS EXACTOS rev_WeightEquip + rev_Weight_Multi
 local autoWeight = false
 MainTab:CreateToggle({Name = "🏋️ Auto Weight", CurrentValue = false, Flag = "AutoWeight", Callback = function(v)
     autoWeight = v
     task.spawn(function()
         while autoWeight do
             pcall(function()
+                if not humanoid then return end
                 local backpack = player:FindFirstChild("Backpack")
-                if not backpack or not humanoid then return end
+                if not backpack then return end
 
-                local pesa = nil
-                -- Busca SOLO herramientas que sean pesas
-                for _, herramienta in pairs(backpack:GetChildren()) do
-                    if herramienta:IsA("Tool") and (
-                        string.find(string.lower(herramienta.Name), "pesa") or
-                        string.find(string.lower(herramienta.Name), "weight") or
-                        string.find(string.lower(herramienta.Name), "dumbbell")
-                    ) then
-                        pesa = herramienta
-                        break
-                    end
-                end
-                -- Si ya la tienes equipada
-                if not pesa then pesa = character:FindFirstChildWhichIsA("Tool") end
-
-                if pesa then
+                local pesa = backpack:FindFirstChild("Weight")
+                if pesa and pesa:IsA("Tool") then
                     if pesa.Parent ~= character then humanoid:EquipTool(pesa) end
-                    pesa:Activate()
-                    -- Valores exactos del remoto
-                    local r = getRemote("rev_KickData")
-                    if r then r:FireServer(12503000000, 183) end
+                    -- Remotos oficiales para activar el entrenamiento
+                    local equip = getRemote("rev_WeightEquip")
+                    local multi = getRemote("rev_Weight_Multi")
+                    local update = getRemote("rev_Weight_Update")
+                    if equip then equip:FireServer() end
+                    if multi then multi:FireServer() end
+                    if update then update:FireServer() end
                 end
             end)
-            task.wait(0.1)
+            task.wait(0.08)
         end
     end)
 end})
 
--- 👆 Auto Click x2 ✅ CLIC A BOTONES MORADOS X2
+-- 👆 Auto Click x2 ✅ rev_TaviMishkal(2)
 local autoClick = false
 MainTab:CreateToggle({Name = "👆 Auto Click x2", CurrentValue = false, Flag = "AutoClickX2", Callback = function(v)
     autoClick = v
-    task.spawn(function()
-        local VirtualUser = game:GetService("VirtualUser")
-        while autoClick do
-            pcall(function()
-                -- Busca todos los botones morados de clic x2
-                for _, gui in pairs(game:GetService("CoreGui"):GetDescendants()) do
-                    if gui:IsA("GuiButton") and gui.Visible and gui.Text:find("x2") or gui.Name:find("Click") then
-                        VirtualUser:Button1Down(Vector2.new(gui.AbsolutePosition.X + gui.AbsoluteSize.X/2, gui.AbsolutePosition.Y + gui.AbsoluteSize.Y/2))
-                        VirtualUser:Button1Up(Vector2.new(gui.AbsolutePosition.X + gui.AbsoluteSize.X/2, gui.AbsolutePosition.Y + gui.AbsoluteSize.Y/2))
-                    end
-                end
-                -- También activa el remoto por seguridad
-                local r = getRemote("rev_TaviMishkal")
-                if r then r:FireServer(2) end
-            end)
-            task.wait(0.02)
-        end
-    end)
+    task.spawn(function() while autoClick do pcall(function() local r = getRemote("rev_TaviMishkal") if r then r:FireServer(2) end end) task.wait(0.015) end end)
 end})
 
--- 🧲 Auto Recoger Dinero ✅ ARREGLADO SOLO PARA DINERO
+-- 🧲 Auto Recoger Dinero ✅ REMOTO EXACTO rev_Collected
 local autoRecoger = false
 MainTab:CreateToggle({Name = "🧲 Auto Recoger Dinero", CurrentValue = false, Flag = "AutoRecoger", Callback = function(v)
     autoRecoger = v
     task.spawn(function()
         while autoRecoger do
             pcall(function()
-                -- Recoge objetos de dinero en el suelo
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj:IsA("BasePart") and obj.Visible and (
-                        obj.Name:find("Coin") or obj.Name:find("Money") or obj.Name:find("Cash") or obj.Name:find("Bill")
-                    ) then
-                        -- Se acerca y recoge
-                        hrp:PivotTo(CFrame.new(obj.Position + Vector3.new(0, 2, 0)))
+                local r = getRemote("rev_Collected")
+                if r then
+                    for _, obj in pairs(workspace:GetDescendants()) do
+                        if obj.Name == "Coin" and obj:IsA("BasePart") and obj.Visible then
+                            r:FireServer(obj)
+                        end
                     end
                 end
             end)
-            task.wait(0.15)
+            task.wait(0.12)
         end
     end)
 end})
 
--- 🔄 Auto Rebirth
-MainTab:CreateToggle({Name = "🔄 Auto Rebirth", CurrentValue = false, Flag = "AutoRebirth", Callback = function(v) end})
+-- 🔄 Auto Rebirth ✅ REMOTO rev_RebirthRequest
+local autoRebirth = false
+MainTab:CreateToggle({Name = "🔄 Auto Rebirth", CurrentValue = false, Flag = "AutoRebirth", Callback = function(v)
+    autoRebirth = v
+    task.spawn(function() while autoRebirth do pcall(function() local r = getRemote("rev_RebirthRequest") if r then r:FireServer() end end) task.wait(1) end end)
+end})
 
--- 📋 Show Panel ✅ ARREGLADO: Panel de rareza/mutación
+-- 📋 Mostrar Panel de Patada ✅ KickResultGui
 MainTab:CreateToggle({Name = "📋 Mostrar Panel de Patada", CurrentValue = true, Flag = "ShowPanel", Callback = function(v)
-    local playerGui = player:FindFirstChild("PlayerGui")
-    if playerGui then
-        for _, gui in pairs(playerGui:GetChildren()) do
-            if gui:IsA("ScreenGui") and gui.Name ~= "Rayfield" and (gui.Name:find("Kick") or gui.Name:find("Preview") or gui.Name:find("Info")) then
-                gui.Enabled = v
-            end
-        end
+    local pg = player:FindFirstChild("PlayerGui")
+    if pg and pg:FindFirstChild("KickResultGui") then
+        pg.KickResultGui.Enabled = v
     end
 end})
 
@@ -154,7 +125,7 @@ end})
 local PlayerTab = Window:CreateTab("3) Player ↓", 4483362458)
 PlayerTab:CreateSection("🏃 Opciones del Jugador")
 
--- 🕊️ Fly ✅ TOTALMENTE CORREGIDO
+-- 🕊️ Fly Estable
 local flying = false
 PlayerTab:CreateToggle({Name = "🕊️ Fly", CurrentValue = false, Flag = "FlyMode", Callback = function(v)
     flying = v
@@ -163,19 +134,13 @@ PlayerTab:CreateToggle({Name = "🕊️ Fly", CurrentValue = false, Flag = "FlyM
         while flying and hrp and humanoid and humanoid.Health > 0 do
             bg = bg or Instance.new("BodyGyro", hrp)
             bv = bv or Instance.new("BodyVelocity", hrp)
-            bg.P = 9e4
+            bg.P = 1000
             bg.maxTorque = Vector3.new(math.huge, math.huge, math.huge)
             bv.maxForce = Vector3.new(math.huge, math.huge, math.huge)
-            bv.Velocity = Vector3.new(0, 0, 0)
-            bg.CFrame = workspace.CurrentCamera.CFrame
-            
             local cam = workspace.CurrentCamera
-            local dir = Vector3.new()
-            if humanoid.MoveDirection ~= Vector3.new() then
-                dir = humanoid.MoveDirection
-            end
-            bv.Velocity = (cam.CFrame.LookVector * dir.Z + cam.CFrame.RightVector * dir.X) * 60
-            
+            local dir = humanoid.MoveDirection
+            bv.Velocity = (cam.CFrame.LookVector * dir.Z + cam.CFrame.RightVector * dir.X) * 55
+            bg.CFrame = cam.CFrame
             task.wait()
         end
         if bg then bg:Destroy() end
@@ -200,4 +165,4 @@ ConfigTab:CreateToggle({Name = "📊 Mostrar FPS", CurrentValue = false, Flag = 
     else _G.ShowFPS=false if game.CoreGui:FindFirstChild("FPSCounter") then game.CoreGui.FPSCounter:Destroy() end end
 end})
 
-Rayfield:Notify({Title = "✅ JoseAngel_Blox Kick v1.6", Content = "¡Todo arreglado como pediste!", Duration = 5})
+Rayfield:Notify({Title = "✅ JoseAngel_Blox Kick v1.9", Content = "¡Todos los remotos oficiales cargados!", Duration = 5})
