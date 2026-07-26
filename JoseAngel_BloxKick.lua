@@ -1,5 +1,5 @@
 -- ======================================================
--- Script: JoseAngel_Blox Kick (PC & Mobile / Delta)
+-- Script: JoseAngel_Blox Kick
 -- Creado por: JoseAngel_Blox
 -- Fecha: 26/07/2026 | Versión: 1.2
 -- ======================================================
@@ -18,7 +18,6 @@ local Window = Rayfield:CreateWindow({
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 
--- Actualizar personaje si muere
 player.CharacterAdded:Connect(function(char)
     character = char
 end)
@@ -29,20 +28,19 @@ local InfoTab = Window:CreateTab("1) info ↓", 4483362458)
 InfoTab:CreateSection("📌 Información del Script")
 InfoTab:CreateLabel("👨‍💻 Creador: JoseAngel_Blox")
 InfoTab:CreateLabel("📅 Fecha de creación: 26/07/2026")
-InfoTab:CreateLabel("🚀 Versión: 1.2 (PC & Mobile)")
+InfoTab:CreateLabel("🚀 Versión: 1.2")
 
 InfoTab:CreateSection("👋 Mensaje de Bienvenida")
 InfoTab:CreateParagraph({
     Title = "✨ ¡Hola! Bienvenido/a ✨", 
-    Content = "Un gran saludo de parte de JoseAngel_Blox. Espero de todo corazón que disfrutes mucho de este script y te sea súper útil para avanzar rápido en el juego.\n\n¡Gracias por usarlo y que te diviertas al máximo! 😉"
+    Content = "Un gran saludo de parte de JoseAngel_Blox. Espero de todo corazón que disfrutes mucho de este script y te sea súper útil para avanzar rápido en el juego.\n\n¡Gracias por usarlo y a divertirse! 😉"
 })
 
 -- ==================== 2) MAIN ↓ ====================
 local MainTab = Window:CreateTab("2) Main ↓", 4483362458)
-
 MainTab:CreateSection("⚡ Funciones Principales")
 
--- Auto Kick (Específico para Kick a Lucky Block)
+-- 1. Auto Kick (Ir a Safe Zone y Patear)
 local autoKickEnabled = false
 MainTab:CreateToggle({
    Name = "👟 Auto Kick",
@@ -53,87 +51,194 @@ MainTab:CreateToggle({
        task.spawn(function()
            while autoKickEnabled do
                pcall(function()
-                   if character and character:FindFirstChild("HumanoidRootPart") then
-                       for _, obj in pairs(workspace:GetDescendants()) do
-                           if not autoKickEnabled then break end
-                           if obj:IsA("ProximityPrompt") then
-                               fireproximityprompt(obj)
-                           elseif obj:IsA("TouchTransmitter") and obj.Parent then
-                               firetouchinterest(character.HumanoidRootPart, obj.Parent, 0)
-                               firetouchinterest(character.HumanoidRootPart, obj.Parent, 1)
-                           end
+                   local hrp = character:FindFirstChild("HumanoidRootPart")
+                   
+                   -- Busca la zona de pateo/Safe Zone en el mapa
+                   local safeZone = workspace:FindFirstChild("SafeZone") or workspace:FindFirstChild("Safe Zone") or workspace:FindFirstChild("KickZone")
+                   if safeZone and hrp then
+                       hrp.CFrame = safeZone.CFrame + Vector3.new(0, 3, 0)
+                   end
+                   
+                   -- Activa pateo/interacción
+                   for _, obj in pairs(workspace:GetDescendants()) do
+                       if not autoKickEnabled then break end
+                       if obj:IsA("ProximityPrompt") then
+                           fireproximityprompt(obj)
+                       elseif obj:IsA("TouchTransmitter") and obj.Parent then
+                           firetouchinterest(hrp, obj.Parent, 0)
+                           firetouchinterest(hrp, obj.Parent, 1)
                        end
                    end
                end)
-               task.wait(0.15)
+               task.wait(0.2)
            end
        end)
    end,
 })
 
--- Funciones simuladas/conectadas para el juego
+-- 2. Auto Weight (Equipar y usar Pesa del inventario)
+local autoWeightEnabled = false
 MainTab:CreateToggle({
    Name = "🏋️ Auto Weight",
    CurrentValue = false,
    Flag = "AutoWeight",
    Callback = function(Value)
-       -- Aquí puedes añadir la ruta o evento de peso del juego si aplica
+       autoWeightEnabled = Value
+       task.spawn(function()
+           while autoWeightEnabled do
+               pcall(function()
+                   local backpack = player:FindFirstChild("Backpack")
+                   local humanoid = character:FindFirstChildOfClass("Humanoid")
+                   
+                   -- Busca una pesa en el inventario
+                   if backpack then
+                       for _, tool in pairs(backpack:GetChildren()) do
+                           if tool:IsA("Tool") and (tool.Name:lower():find("weight") or tool.Name:lower():find("pesa")) then
+                               humanoid:EquipTool(tool)
+                               break
+                           end
+                       end
+                   end
+                   
+                   -- Usa la pesa equipada
+                   local equippedTool = character:FindFirstChildOfClass("Tool")
+                   if equippedTool then
+                       equippedTool:Activate()
+                   end
+               end)
+               task.wait(0.1)
+           end
+       end)
    end,
 })
 
-MainTab:CreateToggle({
-   Name = "🧲 Auto Recoger",
-   CurrentValue = false,
-   Flag = "AutoRecoger",
-   Callback = function(Value)
-       -- Lógica para recoger elementos automáticamente
-   end,
-})
-
+-- 3. Auto Click x2
+local autoClickEnabled = false
 MainTab:CreateToggle({
    Name = "👆 Auto Click x2",
    CurrentValue = false,
    Flag = "AutoClickX2",
    Callback = function(Value)
-       -- Lógica de auto click
+       autoClickEnabled = Value
+       task.spawn(function()
+           local virtualUser = game:GetService("VirtualUser")
+           while autoClickEnabled do
+               pcall(function()
+                   virtualUser:Button1Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+                   task.wait(0.01)
+                   virtualUser:Button1Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+               end)
+               task.wait(0.05)
+           end
+       end)
    end,
 })
 
+-- 4. Auto Recoger (Dinero/Monedas generadas por los Brainrots en la base)
+local autoRecogerEnabled = false
+MainTab:CreateToggle({
+   Name = "🧲 Auto Recoger",
+   CurrentValue = false,
+   Flag = "AutoRecoger",
+   Callback = function(Value)
+       autoRecogerEnabled = Value
+       task.spawn(function()
+           while autoRecogerEnabled do
+               pcall(function()
+                   local hrp = character:FindFirstChild("HumanoidRootPart")
+                   if hrp then
+                       for _, item in pairs(workspace:GetDescendants()) do
+                           if not autoRecogerEnabled then break end
+                           -- Detecta monedas/cash/drops en el mapa o base
+                           if item:IsA("TouchTransmitter") and (item.Parent.Name:lower():find("cash") or item.Parent.Name:lower():find("coin") or item.Parent.Name:lower():find("money")) then
+                               firetouchinterest(hrp, item.Parent, 0)
+                               firetouchinterest(hrp, item.Parent, 1)
+                           end
+                       end
+                   end
+               end)
+               task.wait(0.5)
+           end
+       end)
+   end,
+})
+
+-- 5. Auto Mejorar (Mejorar Brainrots de la base)
+local autoMejorarEnabled = false
 MainTab:CreateToggle({
    Name = "🛠️ Auto Mejorar",
    CurrentValue = false,
    Flag = "AutoMejorar",
    Callback = function(Value)
-       -- Lógica de auto mejorar
+       autoMejorarEnabled = Value
+       task.spawn(function()
+           while autoMejorarEnabled do
+               pcall(function()
+                   local hrp = character:FindFirstChild("HumanoidRootPart")
+                   if hrp then
+                       -- Busca los botones de mejora (Upgrade) en las bases
+                       for _, btn in pairs(workspace:GetDescendants()) do
+                           if not autoMejorarEnabled then break end
+                           if btn:IsA("BasePart") and (btn.Name:lower():find("upgrade") or btn.Name:lower():find("mejorar")) then
+                               if btn:FindFirstChild("TouchTransmitter") then
+                                   firetouchinterest(hrp, btn, 0)
+                                   firetouchinterest(hrp, btn, 1)
+                               end
+                           end
+                       end
+                   end
+               end)
+               task.wait(1)
+           end
+       end)
    end,
 })
 
+-- 6. Auto Rebirth
+local autoRebirthEnabled = false
 MainTab:CreateToggle({
    Name = "🔄 Auto Rebirth",
    CurrentValue = false,
    Flag = "AutoRebirth",
    Callback = function(Value)
-       -- Lógica de auto renacimiento
+       autoRebirthEnabled = Value
+       task.spawn(function()
+           while autoRebirthEnabled do
+               pcall(function()
+                   local rebEvent = game:GetService("ReplicatedStorage"):FindFirstChild("Rebirth", true) or game:GetService("ReplicatedStorage"):FindFirstChild("RebirthRequest", true)
+                   if rebEvent and rebEvent:IsA("RemoteEvent") then
+                       rebEvent:FireServer()
+                   end
+               end)
+               task.wait(2)
+           end
+       end)
    end,
 })
 
+-- 7. Show Panel
 MainTab:CreateToggle({
    Name = "📋 Show Panel",
    CurrentValue = false,
    Flag = "ShowPanel",
    Callback = function(Value)
-       -- Mostrar panel de estadísticas secundarias
+       local playerGui = player:FindFirstChild("PlayerGui")
+       if playerGui then
+           for _, gui in pairs(playerGui:GetChildren()) do
+               if gui:IsA("ScreenGui") and gui.Name ~= "Rayfield" then
+                   gui.Enabled = Value
+               end
+           end
+       end
    end,
 })
 
 -- ==================== 3) PLAYER ↓ ====================
 local PlayerTab = Window:CreateTab("3) Player ↓", 4483362458)
-
 PlayerTab:CreateSection("🏃 Opciones del Jugador")
 
--- Fly compatible con PC y Celular
+-- Fly
 local flying = false
-local uis = game:GetService("UserInputService")
 PlayerTab:CreateToggle({
    Name = "🕊️ Fly",
    CurrentValue = false,
@@ -154,7 +259,7 @@ PlayerTab:CreateToggle({
                local camera = workspace.CurrentCamera
                if character and character:FindFirstChild("Humanoid") then
                    local moveDir = character.Humanoid.MoveDirection
-                   bv.velocity = (camera.CFrame.LookVector * moveDir.Z + camera.CFrame.RightVector * moveDir.X) * 50 + Vector3.new(0, 0, 0)
+                   bv.velocity = (camera.CFrame.LookVector * moveDir.Z + camera.CFrame.RightVector * moveDir.X) * 50
                    bg.cframe = camera.CFrame
                end
            end
@@ -164,6 +269,7 @@ PlayerTab:CreateToggle({
    end,
 })
 
+-- Walkspeed
 PlayerTab:CreateSlider({
    Name = "⚡ Walkspeed (Velocidad Ajustable)",
    Range = {16, 500},
@@ -178,6 +284,7 @@ PlayerTab:CreateSlider({
    end,
 })
 
+-- Anti AFK
 PlayerTab:CreateToggle({
    Name = "🛡️ Anti AFK",
    CurrentValue = true,
@@ -195,7 +302,6 @@ PlayerTab:CreateToggle({
 
 -- ==================== 4) CONFIGURACIONES ↓ ====================
 local ConfigTab = Window:CreateTab("4) Configuraciones ↓", 4483362458)
-
 ConfigTab:CreateSection("⚙️ Rendimiento y Pantalla")
 
 ConfigTab:CreateButton({
@@ -208,7 +314,7 @@ ConfigTab:CreateButton({
            end
        end
        game.Lighting.GlobalShadows = false
-       Rayfield:Notify({ Title = "Anti Lag Activado", Content = "Gráficos optimizados para mayor fluidez.", Duration = 3 })
+       Rayfield:Notify({ Title = "Anti Lag", Content = "Gráficos optimizados.", Duration = 3 })
    end,
 })
 
@@ -258,7 +364,6 @@ ConfigTab:CreateToggle({
 
 Rayfield:Notify({
    Title = "JoseAngel_Blox Kick Loaded",
-   Content = "¡Script cargado con éxito en PC y Celular!",
+   Content = "¡Script listo para usar!",
    Duration = 5,
-   Image = 4483362458,
 })
