@@ -1,7 +1,7 @@
 -- ======================================================
 -- Script: JoseAngel_Blox Kick
 -- Creado por: JoseAngel_Blox
--- Fecha: 26/07/2026 | Versión: 1.2
+-- Fecha: 26/07/2026 | Versión: 1.3 (Remotos Reales)
 -- ======================================================
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -22,13 +22,18 @@ player.CharacterAdded:Connect(function(char)
     character = char
 end)
 
+-- Buscar un RemoteEvent en ReplicatedStorage por su nombre
+local function getRemote(name)
+    return game:GetService("ReplicatedStorage"):FindFirstChild(name, true)
+end
+
 -- ==================== 1) INFO ↓ ====================
 local InfoTab = Window:CreateTab("1) info ↓", 4483362458)
 
 InfoTab:CreateSection("📌 Información del Script")
 InfoTab:CreateLabel("👨‍💻 Creador: JoseAngel_Blox")
 InfoTab:CreateLabel("📅 Fecha de creación: 26/07/2026")
-InfoTab:CreateLabel("🚀 Versión: 1.2")
+InfoTab:CreateLabel("🚀 Versión: 1.3")
 
 InfoTab:CreateSection("👋 Mensaje de Bienvenida")
 InfoTab:CreateParagraph({
@@ -40,7 +45,7 @@ InfoTab:CreateParagraph({
 local MainTab = Window:CreateTab("2) Main ↓", 4483362458)
 MainTab:CreateSection("⚡ Funciones Principales")
 
--- 1. Auto Kick (Ir a Safe Zone y Patear)
+-- 1. Auto Kick (Evento Real: rev_KickEvent)
 local autoKickEnabled = false
 MainTab:CreateToggle({
    Name = "👟 Auto Kick",
@@ -51,32 +56,18 @@ MainTab:CreateToggle({
        task.spawn(function()
            while autoKickEnabled do
                pcall(function()
-                   local hrp = character:FindFirstChild("HumanoidRootPart")
-                   
-                   -- Busca la zona de pateo/Safe Zone en el mapa
-                   local safeZone = workspace:FindFirstChild("SafeZone") or workspace:FindFirstChild("Safe Zone") or workspace:FindFirstChild("KickZone")
-                   if safeZone and hrp then
-                       hrp.CFrame = safeZone.CFrame + Vector3.new(0, 3, 0)
-                   end
-                   
-                   -- Activa pateo/interacción
-                   for _, obj in pairs(workspace:GetDescendants()) do
-                       if not autoKickEnabled then break end
-                       if obj:IsA("ProximityPrompt") then
-                           fireproximityprompt(obj)
-                       elseif obj:IsA("TouchTransmitter") and obj.Parent then
-                           firetouchinterest(hrp, obj.Parent, 0)
-                           firetouchinterest(hrp, obj.Parent, 1)
-                       end
+                   local kickRemote = getRemote("rev_KickEvent")
+                   if kickRemote then
+                       kickRemote:FireServer()
                    end
                end)
-               task.wait(0.2)
+               task.wait(0.05)
            end
        end)
    end,
 })
 
--- 2. Auto Weight (Equipar y usar Pesa del inventario)
+-- 2. Auto Weight (Equipar y Usar Pesa)
 local autoWeightEnabled = false
 MainTab:CreateToggle({
    Name = "🏋️ Auto Weight",
@@ -90,20 +81,17 @@ MainTab:CreateToggle({
                    local backpack = player:FindFirstChild("Backpack")
                    local humanoid = character:FindFirstChildOfClass("Humanoid")
                    
-                   -- Busca una pesa en el inventario
                    if backpack then
                        for _, tool in pairs(backpack:GetChildren()) do
-                           if tool:IsA("Tool") and (tool.Name:lower():find("weight") or tool.Name:lower():find("pesa")) then
+                           if tool:IsA("Tool") then
                                humanoid:EquipTool(tool)
-                               break
                            end
                        end
                    end
                    
-                   -- Usa la pesa equipada
-                   local equippedTool = character:FindFirstChildOfClass("Tool")
-                   if equippedTool then
-                       equippedTool:Activate()
+                   local tool = character:FindFirstChildOfClass("Tool")
+                   if tool then
+                       tool:Activate()
                    end
                end)
                task.wait(0.1)
@@ -112,7 +100,7 @@ MainTab:CreateToggle({
    end,
 })
 
--- 3. Auto Click x2
+-- 3. Auto Click x2 (Evento Real: rev_TaviMishkal)
 local autoClickEnabled = false
 MainTab:CreateToggle({
    Name = "👆 Auto Click x2",
@@ -121,20 +109,20 @@ MainTab:CreateToggle({
    Callback = function(Value)
        autoClickEnabled = Value
        task.spawn(function()
-           local virtualUser = game:GetService("VirtualUser")
            while autoClickEnabled do
                pcall(function()
-                   virtualUser:Button1Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-                   task.wait(0.01)
-                   virtualUser:Button1Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+                   local clickRemote = getRemote("rev_TaviMishkal")
+                   if clickRemote then
+                       clickRemote:FireServer()
+                   end
                end)
-               task.wait(0.05)
+               task.wait(0.01)
            end
        end)
    end,
 })
 
--- 4. Auto Recoger (Dinero/Monedas generadas por los Brainrots en la base)
+-- 4. Auto Recoger (Evento Real: rev_B_Collect)
 local autoRecogerEnabled = false
 MainTab:CreateToggle({
    Name = "🧲 Auto Recoger",
@@ -145,25 +133,18 @@ MainTab:CreateToggle({
        task.spawn(function()
            while autoRecogerEnabled do
                pcall(function()
-                   local hrp = character:FindFirstChild("HumanoidRootPart")
-                   if hrp then
-                       for _, item in pairs(workspace:GetDescendants()) do
-                           if not autoRecogerEnabled then break end
-                           -- Detecta monedas/cash/drops en el mapa o base
-                           if item:IsA("TouchTransmitter") and (item.Parent.Name:lower():find("cash") or item.Parent.Name:lower():find("coin") or item.Parent.Name:lower():find("money")) then
-                               firetouchinterest(hrp, item.Parent, 0)
-                               firetouchinterest(hrp, item.Parent, 1)
-                           end
-                       end
+                   local collectRemote = getRemote("rev_B_Collect")
+                   if collectRemote then
+                       collectRemote:FireServer()
                    end
                end)
-               task.wait(0.5)
+               task.wait(0.2)
            end
        end)
    end,
 })
 
--- 5. Auto Mejorar (Mejorar Brainrots de la base)
+-- 5. Auto Mejorar (En espera del remoto exacto)
 local autoMejorarEnabled = false
 MainTab:CreateToggle({
    Name = "🛠️ Auto Mejorar",
@@ -171,30 +152,10 @@ MainTab:CreateToggle({
    Flag = "AutoMejorar",
    Callback = function(Value)
        autoMejorarEnabled = Value
-       task.spawn(function()
-           while autoMejorarEnabled do
-               pcall(function()
-                   local hrp = character:FindFirstChild("HumanoidRootPart")
-                   if hrp then
-                       -- Busca los botones de mejora (Upgrade) en las bases
-                       for _, btn in pairs(workspace:GetDescendants()) do
-                           if not autoMejorarEnabled then break end
-                           if btn:IsA("BasePart") and (btn.Name:lower():find("upgrade") or btn.Name:lower():find("mejorar")) then
-                               if btn:FindFirstChild("TouchTransmitter") then
-                                   firetouchinterest(hrp, btn, 0)
-                                   firetouchinterest(hrp, btn, 1)
-                               end
-                           end
-                       end
-                   end
-               end)
-               task.wait(1)
-           end
-       end)
    end,
 })
 
--- 6. Auto Rebirth
+-- 6. Auto Rebirth (En espera del remoto exacto)
 local autoRebirthEnabled = false
 MainTab:CreateToggle({
    Name = "🔄 Auto Rebirth",
@@ -202,17 +163,6 @@ MainTab:CreateToggle({
    Flag = "AutoRebirth",
    Callback = function(Value)
        autoRebirthEnabled = Value
-       task.spawn(function()
-           while autoRebirthEnabled do
-               pcall(function()
-                   local rebEvent = game:GetService("ReplicatedStorage"):FindFirstChild("Rebirth", true) or game:GetService("ReplicatedStorage"):FindFirstChild("RebirthRequest", true)
-                   if rebEvent and rebEvent:IsA("RemoteEvent") then
-                       rebEvent:FireServer()
-                   end
-               end)
-               task.wait(2)
-           end
-       end)
    end,
 })
 
@@ -364,6 +314,6 @@ ConfigTab:CreateToggle({
 
 Rayfield:Notify({
    Title = "JoseAngel_Blox Kick Loaded",
-   Content = "¡Script listo para usar!",
+   Content = "¡Remotos de Click x2 y Kick conectados!",
    Duration = 5,
 })
