@@ -1,242 +1,303 @@
--- ======================================================
--- Script: ✨ JoseAngel_Blox Kick ✨
--- Creado por: JoseAngel_Blox (versión corregida 1.9.1)
--- Fecha: 26/07/2026 | Fixes: GetRemote en Workspace + mejoras estabilidad
--- ======================================================
+-- ⚡ JoseAngel_Blox Kick | Versión 1.1
+-- 🎮 Juego: Kick-a-Lucky Block
+-- ✅ Compatible: Móvil / PC / Delta Executor
 
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- Servicios
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Player = Players.LocalPlayer
+local Character, Humanoid, RootPart
 
-local Window = Rayfield:CreateWindow({
-   Name = "✨ JoseAngel_Blox Kick ✨",
-   LoadingTitle = "⚡ Cargando JoseAngel_Blox Kick v1.9.1...",
-   LoadingSubtitle = "Creador: JoseAngel_Blox",
-   ConfigurationSaving = { Enabled = false },
-   Discord = { Enabled = false },
-   KeySystem = false
-})
+-- Crear Interfaz
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local SubTitle = Instance.new("TextLabel")
+local TabContainer = Instance.new("Frame")
+local InfoTab = Instance.new("TextButton")
+local MainTab = Instance.new("TextButton")
+local PlayerTab = Instance.new("TextButton")
+local ConfigTab = Instance.new("TextButton")
+local ContentFrame = Instance.new("ScrollingFrame")
+local UIListLayout = Instance.new("UIListLayout")
+local UICorner = Instance.new("UICorner")
 
-local player = game.Players.LocalPlayer
-local character, humanoid, hrp
+-- Configuración General
+ScreenGui.Name = "JoseAngel_BloxKick"
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+if gethui then ScreenGui.Parent = gethui() end -- Ocultar de desarrolladores
 
-local function actualizarChar()
-    character = player.Character or player.CharacterAdded:Wait()
-    humanoid = character:WaitForChild("Humanoid")
-    hrp = character:WaitForChild("HumanoidRootPart")
+-- Marco Principal (Ancho y cuadrado con esquinas redondeadas)
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
+MainFrame.BorderRadius = UDim.new(0, 16)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -220)
+MainFrame.Size = UDim2.new(0, 400, 0, 440)
+MainFrame.Active = true
+MainFrame.Draggable = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 16)
+
+-- Título
+Title.Parent = MainFrame
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0, 0, 0, 15)
+Title.Size = UDim2.new(1, 0, 0, 35)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "JoseAngel_Blox Kick"
+Title.TextColor3 = Color3.fromRGB(255, 210, 60)
+Title.TextScaled = true
+
+-- Subtítulo
+SubTitle.Parent = MainFrame
+SubTitle.BackgroundTransparency = 1
+SubTitle.Position = UDim2.new(0, 0, 0, 48)
+SubTitle.Size = UDim2.new(1, 0, 0, 22)
+SubTitle.Font = Enum.Font.Gotham
+SubTitle.Text = "Creado por JoseAngel_Blox"
+SubTitle.TextColor3 = Color3.fromRGB(180, 180, 200)
+SubTitle.TextScaled = true
+
+-- Pestañas
+TabContainer.Parent = MainFrame
+TabContainer.BackgroundTransparency = 1
+TabContainer.Position = UDim2.new(0, 15, 0, 80)
+TabContainer.Size = UDim2.new(1, -30, 0, 32)
+
+local function CrearPestaña(nombre, pos)
+    local btn = Instance.new("TextButton")
+    btn.Parent = TabContainer
+    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+    btn.Position = UDim2.new(pos, 0, 0, 0)
+    btn.Size = UDim2.new(0.23, 0, 1, 0)
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = nombre
+    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
+    btn.TextScaled = true
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    return btn
 end
-actualizarChar()
-player.CharacterAdded:Connect(actualizarChar)
 
--- ==================== REMOTO CORREGIDO ====================
-local function getRemote(nombre)
-    return workspace:FindFirstChild(nombre, true)
+InfoTab = CrearPestaña("Info", 0)
+MainTab = CrearPestaña("Main", 0.26)
+PlayerTab = CrearPestaña("Player", 0.52)
+ConfigTab = CrearPestaña("Configuración", 0.78)
+
+-- Área de Contenido
+ContentFrame.Parent = MainFrame
+ContentFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
+ContentFrame.Position = UDim2.new(0, 15, 0, 122)
+ContentFrame.Size = UDim2.new(1, -30, 1, -137)
+ContentFrame.ScrollBarThickness = 4
+Instance.new("UICorner", ContentFrame).CornerRadius = UDim.new(0, 10)
+
+UIListLayout.Parent = ContentFrame
+UIListLayout.Padding = UDim.new(0, 12)
+UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- Variables de Control
+local Funciones = {
+    PerfectKick = false, AutoFarm = false, AutoWeight = false,
+    AutoClick = false, AutoMoney = false, Fly = false,
+    WalkSpeed = 16, InfiniteJump = false, ShowFPS = false, AntiLag = false
+}
+local FPSLabel, ConexionVuelo, ConexionSalto, ConexionAutoClick, ConexionAutoFarm, ConexionDinero
+
+-- Función para crear botones
+local function CrearBoton(texto, variable)
+    local btn = Instance.new("TextButton")
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 65)
+    btn.Size = UDim2.new(0.9, 0, 0, 35)
+    btn.Font = Enum.Font.Gotham
+    btn.Text = texto.." ❌"
+    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
+    btn.TextScaled = true
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+
+    btn.MouseButton1Click:Connect(function()
+        Funciones[variable] = not Funciones[variable]
+        btn.Text = texto.." "..(Funciones[variable] and "✅" or "❌")
+        btn.BackgroundColor3 = Funciones[variable] and Color3.fromRGB(30, 120, 70) or Color3.fromRGB(40, 40, 65)
+    end)
+    return btn
 end
 
--- ==================== 1) INFO ↓ ====================
-local InfoTab = Window:CreateTab("1) info ↓", 4483362458)
-InfoTab:CreateSection("📌 Información del Script")
-InfoTab:CreateLabel("👨‍💻 Creador: JoseAngel_Blox")
-InfoTab:CreateLabel("📅 Fecha: 26/07/2026")
-InfoTab:CreateLabel("🚀 Versión: 1.9.1 (Corregido)")
-InfoTab:CreateSection("👋 Mensaje")
-InfoTab:CreateParagraph({Title = "✨ ¡Remotos Oficiales! ✨", Content = "Todos sacados directamente de Workspace (Dex Explorer)"})
+-- Barra de velocidad
+local function CrearBarra()
+    local contenedor = Instance.new("Frame")
+    contenedor.BackgroundTransparency = 1
+    contenedor.Size = UDim2.new(0.9, 0, 0, 55)
 
--- ==================== 2) MAIN ↓ ====================
-local MainTab = Window:CreateTab("2) Main ↓", 4483362458)
-MainTab:CreateSection("⚡ Funciones Principales")
+    local etiqueta = Instance.new("TextLabel")
+    etiqueta.Parent = contenedor
+    etiqueta.BackgroundTransparency = 1
+    etiqueta.Size = UDim2.new(1, 0, 0, 20)
+    etiqueta.Font = Enum.Font.Gotham
+    etiqueta.Text = "Velocidad: "..Funciones.WalkSpeed
+    etiqueta.TextColor3 = Color3.fromRGB(220, 220, 220)
+    etiqueta.TextScaled = true
 
--- 👟 Auto Kick
-local autoKick = false
-MainTab:CreateToggle({Name = "👟 Auto Kick", CurrentValue = false, Flag = "AutoKick", Callback = function(v)
-    autoKick = v
-    task.spawn(function() 
-        while autoKick do 
-            pcall(function() 
-                local r = getRemote("rev_KickEvent")
-                if r then r:FireServer() end 
-            end)
-            task.wait(0.05) 
-        end 
-    end)
-end})
+    local barra = Instance.new("TextBox")
+    barra.Parent = contenedor
+    barra.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
+    barra.Position = UDim2.new(0, 0, 0, 25)
+    barra.Size = UDim2.new(1, 0, 0, 25)
+    barra.Font = Enum.Font.Gotham
+    barra.PlaceholderText = "Escribe velocidad ej: 50"
+    barra.TextColor3 = Color3.fromRGB(255, 255, 255)
+    barra.TextScaled = true
+    Instance.new("UICorner", barra).CornerRadius = UDim.new(0, 6)
 
--- 🏋️ Auto Weight ✅ REMOTOS EXACTOS rev_WeightEquip + rev_Weight_Multi + rev_Weight_Update
-local autoWeight = false
-MainTab:CreateToggle({Name = "🏋️ Auto Weight", CurrentValue = false, Flag = "AutoWeight", Callback = function(v)
-    autoWeight = v
-    task.spawn(function()
-        while autoWeight do
-            pcall(function()
-                if not humanoid then return end
-                local backpack = player:FindFirstChild("Backpack")
-                if not backpack then return end
-
-                local pesa = backpack:FindFirstChild("Weight")
-                if pesa and pesa:IsA("Tool") then
-                    if pesa.Parent \~= character then
-                        humanoid:EquipTool(pesa)
-                    end
-                    -- Remotos oficiales
-                    local equip = getRemote("rev_WeightEquip")
-                    local multi = getRemote("rev_Weight_Multi")
-                    local update = getRemote("rev_Weight_Update")
-                    if equip then equip:FireServer() end
-                    if multi then multi:FireServer() end
-                    if update then update:FireServer() end
-                end
-            end)
-            task.wait(0.08)
+    barra.FocusLost:Connect(function()
+        local valor = tonumber(barra.Text)
+        if valor and valor > 0 then
+            Funciones.WalkSpeed = valor
+            etiqueta.Text = "Velocidad: "..Funciones.WalkSpeed
+            if Humanoid then Humanoid.WalkSpeed = Funciones.WalkSpeed end
         end
+        barra.Text = ""
     end)
-end})
+    return contenedor
+end
 
--- 👆 Auto Click x2 ✅ rev_TaviMishkal(2)
-local autoClick = false
-MainTab:CreateToggle({Name = "👆 Auto Click x2", CurrentValue = false, Flag = "AutoClickX2", Callback = function(v)
-    autoClick = v
-    task.spawn(function() 
-        while autoClick do 
-            pcall(function() 
-                local r = getRemote("rev_TaviMishkal")
-                if r then r:FireServer(2) end 
-            end)
-            task.wait(0.015) 
-        end 
-    end)
-end})
-
--- 🧲 Auto Recoger Dinero ✅ REMOTO rev_Collected
-local autoRecoger = false
-MainTab:CreateToggle({Name = "🧲 Auto Recoger Dinero", CurrentValue = false, Flag = "AutoRecoger", Callback = function(v)
-    autoRecoger = v
-    task.spawn(function()
-        while autoRecoger do
-            pcall(function()
-                local r = getRemote("rev_Collected")
-                if r then
-                    for _, obj in pairs(workspace:GetDescendants()) do
-                        if obj.Name == "Coin" and obj:IsA("BasePart") and obj.Visible then
-                            r:FireServer(obj)
-                        end
-                    end
-                end
-            end)
-            task.wait(0.12)
-        end
-    end)
-end})
-
--- 🔄 Auto Rebirth ✅ REMOTO rev_RebirthRequest
-local autoRebirth = false
-MainTab:CreateToggle({Name = "🔄 Auto Rebirth", CurrentValue = false, Flag = "AutoRebirth", Callback = function(v)
-    autoRebirth = v
-    task.spawn(function() 
-        while autoRebirth do 
-            pcall(function() 
-                local r = getRemote("rev_RebirthRequest")
-                if r then r:FireServer() end 
-            end)
-            task.wait(0.5) 
-        end 
-    end)
-end})
-
--- 📋 Mostrar Panel de Patada ✅ KickResultGui
-MainTab:CreateToggle({Name = "📋 Mostrar Panel de Patada", CurrentValue = true, Flag = "ShowPanel", Callback = function(v)
-    local pg = player:FindFirstChild("PlayerGui")
-    if pg and pg:FindFirstChild("KickResultGui") then
-        pg.KickResultGui.Enabled = v
+-- Cargar Pestañas
+local function CargarInfo()
+    ContentFrame:ClearAllChildren()
+    local datos = {
+        "📋 Información del Script",
+        "Nombre del creador: JoseAngel_Blox",
+        "Fecha de lanzamiento: 27/07/2026",
+        "Versión: 1.1"
+    }
+    for _, texto in pairs(datos) do
+        local lbl = Instance.new("TextLabel")
+        lbl.BackgroundTransparency = 1
+        lbl.Size = UDim2.new(0.9, 0, 0, 30)
+        lbl.Font = Enum.Font.Gotham
+        lbl.Text = texto
+        lbl.TextColor3 = Color3.fromRGB(200, 200, 220)
+        lbl.TextScaled = true
+        lbl.Parent = ContentFrame
     end
-end})
+end
 
--- ==================== 3) PLAYER ↓ ====================
-local PlayerTab = Window:CreateTab("3) Player ↓", 4483362458)
-PlayerTab:CreateSection("🏃 Opciones del Jugador")
+local function CargarMain()
+    ContentFrame:ClearAllChildren()
+    CrearBoton("⚡ Perfect Kick", "PerfectKick").Parent = ContentFrame
+    CrearBoton("🤖 Auto Farm", "AutoFarm").Parent = ContentFrame
+    CrearBoton("🏋️ Auto Weight", "AutoWeight").Parent = ContentFrame
+    CrearBoton("🖱️ Auto Click x2", "AutoClick").Parent = ContentFrame
+    CrearBoton("💰 Auto Recoger Dinero", "AutoMoney").Parent = ContentFrame
+end
 
--- 🕊️ Fly Estable
-local flying = false
-PlayerTab:CreateToggle({Name = "🕊️ Fly", CurrentValue = false, Flag = "FlyMode", Callback = function(v)
-    flying = v
-    task.spawn(function()
-        local bg, bv
-        while flying and hrp and humanoid and humanoid.Health > 0 do
-            bg = bg or Instance.new("BodyGyro", hrp)
-            bv = bv or Instance.new("BodyVelocity", hrp)
-            bg.P = 1000
-            bg.maxTorque = Vector3.new(math.huge, math.huge, math.huge)
-            bv.maxForce = Vector3.new(math.huge, math.huge, math.huge)
-            local cam = workspace.CurrentCamera
-            local dir = humanoid.MoveDirection
-            bv.Velocity = (cam.CFrame.LookVector * dir.Z + cam.CFrame.RightVector * dir.X) * 55
-            bg.CFrame = cam.CFrame
-            task.wait()
-        end
-        if bg then bg:Destroy() end
-        if bv then bv:Destroy() end
-    end)
-end})
+local function CargarPlayer()
+    ContentFrame:ClearAllChildren()
+    CrearBoton("🕊️ Fly", "Fly").Parent = ContentFrame
+    CrearBarra().Parent = ContentFrame
+    CrearBoton("🦘 Saltos Infinitos", "InfiniteJump").Parent = ContentFrame
+end
 
-PlayerTab:CreateSlider({Name = "⚡ Walkspeed", Range = {16, 500}, Increment = 1, Suffix = " Speed", CurrentValue = 16, Flag = "WalkspeedSlider", Callback = function(v) if humanoid then humanoid.WalkSpeed = v end end})
+local function CargarConfig()
+    ContentFrame:ClearAllChildren()
+    CrearBoton("📊 Mostrar FPS", "ShowFPS").Parent = ContentFrame
+    CrearBoton("🚀 Anti Lag", "AntiLag").Parent = ContentFrame
+end
 
-PlayerTab:CreateToggle({Name = "🛡️ Anti AFK", CurrentValue = true, Flag = "AntiAFK", Callback = function(v) if v then 
-    local vu = game:GetService("VirtualUser")
-    player.Idled:Connect(function() 
-        vu:CaptureController() 
-        vu:ClickButton2(Vector2.new()) 
-    end) 
-end end})
+-- Eventos de pestañas
+InfoTab.MouseButton1Click:Connect(CargarInfo)
+MainTab.MouseButton1Click:Connect(CargarMain)
+PlayerTab.MouseButton1Click:Connect(CargarPlayer)
+ConfigTab.MouseButton1Click:Connect(CargarConfig)
 
--- ==================== 4) CONFIGURACIONES ↓ ====================
-local ConfigTab = Window:CreateTab("4) Configuraciones ↓", 4483362458)
-ConfigTab:CreateSection("⚙️ Rendimiento")
+-- Cargar pestaña inicial
+CargarInfo()
 
-ConfigTab:CreateButton({Name = "🧹 Anti Lag", Callback = function() 
-    for _, d in pairs(workspace:GetDescendants()) do 
-        if d:IsA("BasePart") then 
-            d.Material = Enum.Material.SmoothPlastic 
-            d.Reflectance = 0 
-        end 
-    end 
-    game.Lighting.GlobalShadows = false 
-    Rayfield:Notify({Title = "✅ Listo", Content = "Gráficos optimizados", Duration = 3}) 
-end})
+-- Funciones del script
+Player.CharacterAdded:Connect(function(pj)
+    Character = pj
+    Humanoid = Character:WaitForChild("Humanoid")
+    RootPart = Character:WaitForChild("HumanoidRootPart")
+    Humanoid.WalkSpeed = Funciones.WalkSpeed
+end)
 
-ConfigTab:CreateToggle({Name = "📊 Mostrar FPS", CurrentValue = false, Flag = "ShowFPS", Callback = function(v)
-    local rs = game:GetService("RunService")
-    if v then 
-        _G.ShowFPS = true 
-        local sg = Instance.new("ScreenGui")
-        local tl = Instance.new("TextLabel")
-        sg.Name = "FPSCounter"
-        sg.Parent = game.CoreGui
-        tl.Parent = sg
-        tl.Size = UDim2.new(0,100,0,30)
-        tl.Position = UDim2.new(0,10,0,10)
-        tl.BackgroundTransparency = 0.5
-        tl.BackgroundColor3 = Color3.new(0,0,0)
-        tl.TextColor3 = Color3.new(0,1,0)
-        tl.TextSize = 14
-        tl.Font = Enum.Font.SourceSansBold
+-- Saltos infinitos
+UIS.JumpRequest:Connect(function()
+    if Funciones.InfiniteJump and Humanoid and Humanoid.Health > 0 then
+        Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
 
-        task.spawn(function()
-            local t = 0
-            local f = 0
-            while _G.ShowFPS do
-                f = f + 1
-                if tick() - t >= 1 then
-                    tl.Text = "FPS: " .. f
-                    f = 0
-                    t = tick()
-                end
-                rs.RenderStepped:Wait()
+-- Bucle principal
+RunService.Heartbeat:Connect(function()
+    if not Humanoid or Humanoid.Health <= 0 then return end
+
+    -- Velocidad
+    Humanoid.WalkSpeed = Funciones.WalkSpeed
+
+    -- Auto Click
+    if Funciones.AutoClick then task.wait(0.5) and UIS:SendKeyEvent(true, Enum.KeyCode.MouseButton1, false, game) end
+
+    -- Auto Farm Brainrot
+    if Funciones.AutoFarm and RootPart then
+        local zona = workspace:FindFirstChild("SafeZone")
+        if zona then Humanoid:MoveTo(zona.Position) end
+    end
+
+    -- Auto Weight
+    if Funciones.AutoWeight then
+        for _, v in pairs(workspace:GetChildren()) do
+            if v:IsA("Tool") and v.Name:lower():find("weight") and not Player.Backpack:FindFirstChild(v.Name) then
+                Player.Character.HumanoidRootPart.CFrame = v.CFrame
+                task.wait(0.1)
             end
-            sg:Destroy()
-        end)
-    else 
-        _G.ShowFPS = false
-        if game.CoreGui:FindFirstChild("FPSCounter") then
-            game.CoreGui.FPSCounter:Destroy()
         end
     end
-end})
 
-Rayfield:Notify({Title = "✅ JoseAngel_Blox Kick v1.9.1", Content = "¡Remotos oficiales cargados y script arreglado! 🔥", Duration = 5})
+    -- Mostrar FPS
+    if Funciones.ShowFPS then
+        local fps = math.floor(1/RunService.RenderStepped:Wait())
+        if not FPSLabel then
+            FPSLabel = Instance.new("TextLabel", ScreenGui)
+            FPSLabel.Position = UDim2.new(0.02,0,0.02,0)
+            FPSLabel.Size = UDim2.new(0,120,0,25)
+            FPSLabel.BackgroundTransparency = 0.3
+            FPSLabel.BackgroundColor3 = Color3.new(0,0,0)
+            FPSLabel.Font = Enum.Font.GothamBold
+            FPSLabel.TextColor3 = Color3.new(1,1,1)
+            FPSLabel.TextScaled = true
+            Instance.new("UICorner", FPSLabel).CornerRadius = UDim.new(0,6)
+        end
+        FPSLabel.Text = "📊 FPS: "..fps
+    elseif FPSLabel then FPSLabel:Destroy() FPSLabel = nil end
+
+    -- Anti Lag
+    if Funciones.AntiLag then
+        for _, v in pairs(workspace:GetChildren()) do
+            if v:IsA("ParticleEmitter") then v.Enabled = false end
+            if v:IsA("Decal") and v.Transparency < 0.5 then v.Transparency = 0.5 end
+        end
+    end
+
+    -- Vuelo
+    if Funciones.Fly then
+        Humanoid.PlatformStand = true
+        local cam = workspace.CurrentCamera
+        RootPart.Velocity = cam.CFrame.LookVector * 50 + cam.CFrame.UpVector * (UIS:IsKeyDown(Enum.KeyCode.Space) and 35 or 0) + cam.CFrame.UpVector * (UIS:IsKeyDown(Enum.KeyCode.LeftControl) and -35 or 0)
+    else Humanoid.PlatformStand = false end
+end)
+
+-- Auto Recoger Dinero
+task.spawn(function()
+    while true do
+        if Funciones.AutoMoney and Character then
+            for _, v in pairs(workspace:GetChildren()) do
+                if v.Name == "Coin" or v.Name == "Money" then
+                    RootPart.CFrame = v.CFrame
+                end
+            end
+        end
+        task.wait(0.3)
+    end
+end)
