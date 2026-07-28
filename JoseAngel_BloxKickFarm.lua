@@ -1,5 +1,5 @@
 -- ==========================================
--- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V1.3 (FINAL)
+-- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V1.1 (FINAL)
 -- Universal (PC & Móvil) para Delta Executor
 -- ==========================================
 
@@ -10,7 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-local guiName = "JoseAngel_Blox_KickFarm_V1.3"
+local guiName = "JoseAngel_Blox_KickFarm_V1.1"
 
 -- 1. Evitar ventanas duplicadas
 if CoreGui:FindFirstChild(guiName) then
@@ -218,8 +218,8 @@ end
 
 AddInfoText("Nombre del creador: JoseAngel_Blox")
 AddInfoText("Fecha de lanzamiento: 27/07/2026")
-AddInfoText("Versión: 1.3")
-AddInfoText("Update: Conectado de forma precisa a rev_KickEvent para auto-patear.")
+AddInfoText("Versión: 1.1")
+AddInfoText("Update: Nuevo script 100% funcional sin lag mayor compatibilidad 0bugs disfruta del script atentamente JoseAngel_Blox")
 
 -- ==========================================
 -- COMPONENTE DE SELECTOR (TOGGLE UNIVERSAL)
@@ -307,7 +307,7 @@ local function HandleToggle(switch, slider, button, callback)
     end)
 end
 
--- 1) Perfect Kick (Utiliza la ruta exacta de rev_KickEvent para mandar el FireServer)
+-- 1) Perfect Kick (Pateo automático mediante rev_KickEvent)
 local pkActivo = false
 HandleToggle(pkSwitch, pkSlider, pkButton, function(isOn)
     pkActivo = isOn
@@ -330,7 +330,7 @@ HandleToggle(pkSwitch, pkSlider, pkButton, function(isOn)
     end
 end)
 
--- 2) Auto farm (Correr automáticamente hacia la Safe Zone / KickReady)
+-- 2) Auto farm (Velocidad aumentada a 250 para volar directo a la Safe Zone)
 local afActivo = false
 HandleToggle(afSwitch, afSlider, afButton, function(isOn)
     afActivo = isOn
@@ -342,7 +342,7 @@ HandleToggle(afSwitch, afSlider, afButton, function(isOn)
                 local rootPart = character:FindFirstChild("HumanoidRootPart")
                 
                 if humanoid and rootPart then
-                    humanoid.WalkSpeed = 100 
+                    humanoid.WalkSpeed = 250 
                     
                     local safeZone = workspace:FindFirstChild("KickReady", true)
                     if safeZone then
@@ -363,7 +363,7 @@ HandleToggle(afSwitch, afSlider, afButton, function(isOn)
                         end
                     end
                 end
-                task.wait(0.5)
+                task.wait(0.3)
             end
         end)
     else
