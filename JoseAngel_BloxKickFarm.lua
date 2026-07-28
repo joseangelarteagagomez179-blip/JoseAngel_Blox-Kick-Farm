@@ -1,12 +1,12 @@
 -- ==========================================
--- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V1.1 (FINAL)
+-- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V1.1
 -- Universal (PC & Móvil) para Delta Executor
 -- ==========================================
 
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualUser = game:GetService("VirtualUser")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
@@ -219,7 +219,7 @@ end
 AddInfoText("Nombre del creador: JoseAngel_Blox")
 AddInfoText("Fecha de lanzamiento: 27/07/2026")
 AddInfoText("Versión: 1.1")
-AddInfoText("Update: RemoteEvents de patada sincronizados con parámetros exactos.")
+AddInfoText("Update: Simulador táctil optimizado para animaciones de patada.")
 
 -- ==========================================
 -- COMPONENTE DE SELECTOR (TOGGLE UNIVERSAL)
@@ -307,21 +307,19 @@ local function HandleToggle(switch, slider, button, callback)
     end)
 end
 
--- 1) Perfect Kick Corregido (Envía los argumentos exactos capturados en el Remote Spy)
+-- 1) Perfect Kick (Simulación táctil para activar la animación y registrar la patada perfectamente)
 local pkActivo = false
 HandleToggle(pkSwitch, pkSlider, pkButton, function(isOn)
     pkActivo = isOn
     if pkActivo then
         task.spawn(function()
             while pkActivo do
-                local kickEvent = ReplicatedStorage:FindFirstChild("rev_KickEvent", true)
-                if kickEvent then
-                    -- Enviamos el número de marca de tiempo simulado y la tabla vacía o requerida por el juego
-                    kickEvent:FireServer(tick(), {})
-                else
-                    game:GetService("VirtualUser"):ClickButton1(Vector2.new(0,0))
-                end
-                task.wait(0.05)
+                pcall(function()
+                    VirtualUser:Button1Down(Vector2.new(200, 200))
+                    task.wait(0.02)
+                    VirtualUser:Button1Up(Vector2.new(200, 200))
+                end)
+                task.wait(0.1)
             end
         end)
     end
