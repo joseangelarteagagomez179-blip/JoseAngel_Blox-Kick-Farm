@@ -1,5 +1,5 @@
 -- ==========================================
--- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V1.1 (FINAL)
+-- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V1.1 (DEFINITIVO)
 -- Universal (PC & Móvil) para Delta Executor
 -- ==========================================
 
@@ -132,10 +132,12 @@ RightPanel.Parent = MainFrame
 Instance.new("UICorner", RightPanel).CornerRadius = UDim.new(0, 8)
 
 -- Contenedores
-local InfoContainer = Instance.new("Frame")
+local InfoContainer = Instance.new("ScrollingFrame") -- Cambiado a ScrollingFrame por seguridad si el texto es grande
 InfoContainer.Size = UDim2.new(1, 0, 1, 0)
 InfoContainer.BackgroundTransparency = 1
 InfoContainer.Visible = true 
+InfoContainer.CanvasSize = UDim2.new(0, 0, 0, 200)
+InfoContainer.ScrollBarThickness = 4
 InfoContainer.Parent = RightPanel
 
 local MainContainer = Instance.new("Frame")
@@ -153,7 +155,7 @@ UIPaddingMain.PaddingLeft = UDim.new(0, 15)
 UIPaddingMain.PaddingRight = UDim.new(0, 15)
 
 local UIListLayoutInfo = Instance.new("UIListLayout", InfoContainer)
-UIListLayoutInfo.Padding = UDim.new(0, 12)
+UIListLayoutInfo.Padding = UDim.new(0, 10)
 local UIPaddingInfo = Instance.new("UIPadding", InfoContainer)
 UIPaddingInfo.PaddingTop = UDim.new(0, 15)
 UIPaddingInfo.PaddingLeft = UDim.new(0, 15)
@@ -201,15 +203,16 @@ local TabInfo = CreateTab("1) info ↓", InfoContainer, true, 1)
 local TabMain = CreateTab("2) Main ↓", MainContainer, false, 2)
 
 -- ==========================================
--- CONTENIDO: PESTAÑA INFO
+-- CONTENIDO: PESTAÑA INFO (Ajustado Multilínea)
 -- ==========================================
-local function AddInfoText(text)
+local function AddInfoText(text, height)
     local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, 0, 0, 20)
+    lbl.Size = UDim2.new(1, 0, 0, height or 25)
     lbl.BackgroundTransparency = 1
     lbl.Text = text
     lbl.TextColor3 = Color3.fromRGB(220, 220, 220)
     lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.TextYAlignment = Enum.TextYAlignment.Top
     lbl.Font = Enum.Font.Gotham
     lbl.TextSize = 14
     lbl.TextWrapped = true
@@ -219,7 +222,7 @@ end
 AddInfoText("Nombre del creador: JoseAngel_Blox")
 AddInfoText("Fecha de lanzamiento: 27/07/2026")
 AddInfoText("Versión: 1.1")
-AddInfoText("Update: Nuevo script 100% funcional sin lag mayor compatibilidad 0bugs disfruta del script atentamente JoseAngel_Blox")
+AddInfoText("Update: Nuevo script 100% funcional sin lag mayor compatibilidad 0bugs disfruta del script atentamente JoseAngel_Blox", 55)
 
 -- ==========================================
 -- COMPONENTE DE SELECTOR (TOGGLE UNIVERSAL)
