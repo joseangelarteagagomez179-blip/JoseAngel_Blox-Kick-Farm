@@ -1,5 +1,5 @@
 -- ==========================================
--- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V1.1
+-- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V1.1 (FINAL)
 -- Universal (PC & Móvil) para Delta Executor
 -- ==========================================
 
@@ -135,7 +135,7 @@ Instance.new("UICorner", RightPanel).CornerRadius = UDim.new(0, 8)
 local InfoContainer = Instance.new("Frame")
 InfoContainer.Size = UDim2.new(1, 0, 1, 0)
 InfoContainer.BackgroundTransparency = 1
-InfoContainer.Visible = true -- INFO VISIBLE POR DEFECTO
+InfoContainer.Visible = true 
 InfoContainer.Parent = RightPanel
 
 local MainContainer = Instance.new("Frame")
@@ -160,7 +160,7 @@ UIPaddingInfo.PaddingLeft = UDim.new(0, 15)
 UIPaddingInfo.PaddingRight = UDim.new(0, 15)
 
 -- ==========================================
--- CREACIÓN DE PESTAÑAS (INFO DE PRIMERO)
+-- CREACIÓN DE PESTAÑAS
 -- ==========================================
 local UIListLayoutLeft = Instance.new("UIListLayout", LeftPanel)
 UIListLayoutLeft.Padding = UDim.new(0, 8)
@@ -219,7 +219,7 @@ end
 AddInfoText("Nombre del creador: JoseAngel_Blox")
 AddInfoText("Fecha de lanzamiento: 27/07/2026")
 AddInfoText("Versión: 1.1")
-AddInfoText("Update: nuevo script con mayor compatibilidad, optimizado, sin lag")
+AddInfoText("Update: RemoteEvents de patada sincronizados con parámetros exactos.")
 
 -- ==========================================
 -- COMPONENTE DE SELECTOR (TOGGLE UNIVERSAL)
@@ -307,7 +307,7 @@ local function HandleToggle(switch, slider, button, callback)
     end)
 end
 
--- 1) Perfect Kick (Uso de rev_KickEvent para patear perfectamente)
+-- 1) Perfect Kick Corregido (Envía los argumentos exactos capturados en el Remote Spy)
 local pkActivo = false
 HandleToggle(pkSwitch, pkSlider, pkButton, function(isOn)
     pkActivo = isOn
@@ -316,7 +316,8 @@ HandleToggle(pkSwitch, pkSlider, pkButton, function(isOn)
             while pkActivo do
                 local kickEvent = ReplicatedStorage:FindFirstChild("rev_KickEvent", true)
                 if kickEvent then
-                    kickEvent:FireServer("Perfect")
+                    -- Enviamos el número de marca de tiempo simulado y la tabla vacía o requerida por el juego
+                    kickEvent:FireServer(tick(), {})
                 else
                     game:GetService("VirtualUser"):ClickButton1(Vector2.new(0,0))
                 end
