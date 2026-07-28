@@ -1,5 +1,5 @@
 -- ==========================================
--- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V1.2 (DEFINITIVO)
+-- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V1.3 (FINAL)
 -- Universal (PC & Móvil) para Delta Executor
 -- ==========================================
 
@@ -10,7 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-local guiName = "JoseAngel_Blox_KickFarm_V1.2"
+local guiName = "JoseAngel_Blox_KickFarm_V1.3"
 
 -- 1. Evitar ventanas duplicadas
 if CoreGui:FindFirstChild(guiName) then
@@ -218,8 +218,8 @@ end
 
 AddInfoText("Nombre del creador: JoseAngel_Blox")
 AddInfoText("Fecha de lanzamiento: 27/07/2026")
-AddInfoText("Versión: 1.2")
-AddInfoText("Update: Conectado al Remote rev_KickData para auto patada real.")
+AddInfoText("Versión: 1.3")
+AddInfoText("Update: Conectado de forma precisa a rev_KickEvent para auto-patear.")
 
 -- ==========================================
 -- COMPONENTE DE SELECTOR (TOGGLE UNIVERSAL)
@@ -307,7 +307,7 @@ local function HandleToggle(switch, slider, button, callback)
     end)
 end
 
--- 1) Perfect Kick (Dispara automáticamente al Remote rev_KickData)
+-- 1) Perfect Kick (Utiliza la ruta exacta de rev_KickEvent para mandar el FireServer)
 local pkActivo = false
 HandleToggle(pkSwitch, pkSlider, pkButton, function(isOn)
     pkActivo = isOn
@@ -315,9 +315,13 @@ HandleToggle(pkSwitch, pkSlider, pkButton, function(isOn)
         task.spawn(function()
             while pkActivo do
                 pcall(function()
-                    local kickDataEvent = ReplicatedStorage:FindFirstChild("rev_KickData", true)
-                    if kickDataEvent then
-                        kickDataEvent:FireServer()
+                    local kickEvent = ReplicatedStorage:FindFirstChild("Shared") 
+                        and ReplicatedStorage.Shared:FindFirstChild("Packages") 
+                        and ReplicatedStorage.Shared.Packages:FindFirstChild("Network") 
+                        and ReplicatedStorage.Shared.Packages.Network:FindFirstChild("rev_KickEvent")
+                    
+                    if kickEvent then
+                        kickEvent:FireServer()
                     end
                 end)
                 task.wait(0.05)
