@@ -1,16 +1,16 @@
 -- ==========================================
--- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V1.1
+-- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V1.2 (DEFINITIVO)
 -- Universal (PC & Móvil) para Delta Executor
 -- ==========================================
 
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-local guiName = "JoseAngel_Blox_KickFarm_V1.1"
+local guiName = "JoseAngel_Blox_KickFarm_V1.2"
 
 -- 1. Evitar ventanas duplicadas
 if CoreGui:FindFirstChild(guiName) then
@@ -218,8 +218,8 @@ end
 
 AddInfoText("Nombre del creador: JoseAngel_Blox")
 AddInfoText("Fecha de lanzamiento: 27/07/2026")
-AddInfoText("Versión: 1.1")
-AddInfoText("Update: VirtualInputManager de alta precisión para móviles y PC.")
+AddInfoText("Versión: 1.2")
+AddInfoText("Update: Conectado al Remote rev_KickData para auto patada real.")
 
 -- ==========================================
 -- COMPONENTE DE SELECTOR (TOGGLE UNIVERSAL)
@@ -307,7 +307,7 @@ local function HandleToggle(switch, slider, button, callback)
     end)
 end
 
--- 1) Perfect Kick (Usando VirtualInputManager con toques táctiles reales simulados)
+-- 1) Perfect Kick (Dispara automáticamente al Remote rev_KickData)
 local pkActivo = false
 HandleToggle(pkSwitch, pkSlider, pkButton, function(isOn)
     pkActivo = isOn
@@ -315,12 +315,12 @@ HandleToggle(pkSwitch, pkSlider, pkButton, function(isOn)
         task.spawn(function()
             while pkActivo do
                 pcall(function()
-                    -- Simulamos un toque directo en el centro de la pantalla donde suele estar el botón de patear del juego
-                    VirtualInputManager:SendTouchEvent(1, 300, 400, Enum.UserInputState.Begin)
-                    task.wait(0.01)
-                    VirtualInputManager:SendTouchEvent(1, 300, 400, Enum.UserInputState.End)
+                    local kickDataEvent = ReplicatedStorage:FindFirstChild("rev_KickData", true)
+                    if kickDataEvent then
+                        kickDataEvent:FireServer()
+                    end
                 end)
-                task.wait(0.08)
+                task.wait(0.05)
             end
         end)
     end
