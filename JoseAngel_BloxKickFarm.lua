@@ -1,10 +1,16 @@
 -- ==========================================
--- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V2.0
--- (Con selectores visuales personalizados)
+-- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V1.4 (UNIVERSAL PC & MÓVIL)
+-- Compatible con Delta Executor
 -- ==========================================
 
 local CoreGui = game:GetService("CoreGui")
-local guiName = "JoseAngel_Blox_KickFarm_V2"
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local VirtualUser = game:GetService("VirtualUser")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local guiName = "JoseAngel_Blox_KickFarm_Universal"
 
 -- 1. Evitar ventanas duplicadas
 if CoreGui:FindFirstChild(guiName) then
@@ -21,31 +27,68 @@ ScreenGui.Parent = CoreGui
 -- ==========================================
 local ToggleGuiBtn = Instance.new("TextButton")
 ToggleGuiBtn.Size = UDim2.new(0, 45, 0, 45)
-ToggleGuiBtn.Position = UDim2.new(0, 15, 0.5, -22) -- A un lado de la pantalla
+ToggleGuiBtn.Position = UDim2.new(0, 15, 0.5, -22)
 ToggleGuiBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 ToggleGuiBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleGuiBtn.Text = "JB\nMenu"
 ToggleGuiBtn.Font = Enum.Font.GothamBold
 ToggleGuiBtn.TextSize = 12
 ToggleGuiBtn.Parent = ScreenGui
-Instance.new("UICorner", ToggleGuiBtn).CornerRadius = UDim.new(1, 0) -- Lo hace un círculo perfecto
+Instance.new("UICorner", ToggleGuiBtn).CornerRadius = UDim.new(1, 0)
 
 -- ==========================================
--- INTERFAZ PRINCIPAL (Cuadrada con bordes redondeados)
+-- INTERFAZ PRINCIPAL
 -- ==========================================
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 520, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -260, 0.5, -160) -- Centrado
+MainFrame.Position = UDim2.new(0.5, -260, 0.5, -160)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.Draggable = true -- Se puede deslizar por la pantalla
 MainFrame.Active = true
-MainFrame.Visible = true -- Visible por defecto para el primer arranque
+MainFrame.Visible = true
 MainFrame.Parent = ScreenGui
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12) -- Esquinas redondeadas
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 
--- Funcionalidad del botón de ocultar/mostrar
-ToggleGuiBtn.MouseButton1Click:Connect(function()
+ToggleGuiBtn.Activated:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
+end)
+
+-- ==========================================
+-- SISTEMA DE ARRASTRE UNIVERSAL (PC & MÓVIL)
+-- ==========================================
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
 end)
 
 -- ==========================================
@@ -72,7 +115,7 @@ SubTitle.TextSize = 13
 SubTitle.Parent = MainFrame
 
 -- ==========================================
--- PANELES (Izquierdo: Pestañas | Derecho: Funciones)
+-- PANELES
 -- ==========================================
 local LeftPanel = Instance.new("Frame")
 LeftPanel.Size = UDim2.new(0, 140, 1, -65)
@@ -88,17 +131,17 @@ RightPanel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 RightPanel.Parent = MainFrame
 Instance.new("UICorner", RightPanel).CornerRadius = UDim.new(0, 8)
 
--- Contenedores de cada pestaña
+-- Contenedores
 local InfoContainer = Instance.new("Frame")
 InfoContainer.Size = UDim2.new(1, 0, 1, 0)
 InfoContainer.BackgroundTransparency = 1
-InfoContainer.Visible = false -- Oculto al inicio
+InfoContainer.Visible = true 
 InfoContainer.Parent = RightPanel
 
 local MainContainer = Instance.new("Frame")
 MainContainer.Size = UDim2.new(1, 0, 1, 0)
 MainContainer.BackgroundTransparency = 1
-MainContainer.Visible = true -- Visible por defecto
+MainContainer.Visible = false 
 MainContainer.Parent = RightPanel
 
 -- Layouts
@@ -117,19 +160,21 @@ UIPaddingInfo.PaddingLeft = UDim.new(0, 15)
 UIPaddingInfo.PaddingRight = UDim.new(0, 15)
 
 -- ==========================================
--- CREACIÓN DE PESTAÑAS (Lado Izquierdo)
+-- CREACIÓN DE PESTAÑAS
 -- ==========================================
 local UIListLayoutLeft = Instance.new("UIListLayout", LeftPanel)
 UIListLayoutLeft.Padding = UDim.new(0, 8)
+UIListLayoutLeft.SortOrder = Enum.SortOrder.LayoutOrder
 local UIPaddingLeft = Instance.new("UIPadding", LeftPanel)
 UIPaddingLeft.PaddingTop = UDim.new(0, 10)
 UIPaddingLeft.PaddingLeft = UDim.new(0, 10)
 UIPaddingLeft.PaddingRight = UDim.new(0, 10)
 
-local function CreateTab(text, container, isMain)
+local function CreateTab(text, container, isDefault, layoutOrder)
     local btn = Instance.new("TextButton")
+    btn.LayoutOrder = layoutOrder
     btn.Size = UDim2.new(1, 0, 0, 35)
-    btn.BackgroundColor3 = isMain and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(45, 45, 45)
+    btn.BackgroundColor3 = isDefault and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(45, 45, 45)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Text = text
     btn.Font = Enum.Font.GothamSemibold
@@ -137,25 +182,23 @@ local function CreateTab(text, container, isMain)
     btn.Parent = LeftPanel
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
 
-    btn.MouseButton1Click:Connect(function()
+    btn.Activated:Connect(function()
         InfoContainer.Visible = false
         MainContainer.Visible = false
         container.Visible = true
         
-        -- Reiniciar colores
         for _, child in pairs(LeftPanel:GetChildren()) do
             if child:IsA("TextButton") then
                 child.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
             end
         end
-        btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60) -- Ilumina la seleccionada
+        btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     end)
     return btn
 end
 
--- Crear pestañas, 'Main' es la primera
-local TabMain = CreateTab("2) Main ↓", MainContainer, true)
-local TabInfo = CreateTab("1) info ↓", InfoContainer, false)
+local TabInfo = CreateTab("1) info ↓", InfoContainer, true, 1)
+local TabMain = CreateTab("2) Main ↓", MainContainer, false, 2)
 
 -- ==========================================
 -- CONTENIDO: PESTAÑA INFO
@@ -175,15 +218,12 @@ end
 
 AddInfoText("Nombre del creador: JoseAngel_Blox")
 AddInfoText("Fecha de lanzamiento: 27/07/2026")
-AddInfoText("Versión: 1.2")
-AddInfoText("Update: Añadidos selectores visuales nativos estilo iOS, optimización gráfica.")
+AddInfoText("Versión: 1.4 (Universal)")
+AddInfoText("Update: Arrastre manual táctil y eventos de activación optimizados para PC y Móvil.")
 
 -- ==========================================
--- COMPONENTE DE SELECTOR VISUAL (TOGGLE) NATIVO
--- (Sin librerías, estilo image_0.png)
+-- COMPONENTE DE SELECTOR (TOGGLE UNIVERSAL)
 -- ==========================================
-local TweenService = game:GetService("TweenService")
-
 local function CreateVisualToggle(parent, text, text_below)
     local toggleRow = Instance.new("Frame")
     toggleRow.Size = UDim2.new(1, 0, 0, 50)
@@ -192,7 +232,6 @@ local function CreateVisualToggle(parent, text, text_below)
     
     local textLabel = Instance.new("TextLabel")
     textLabel.Size = UDim2.new(0.6, 0, 1, 0)
-    textLabel.Position = UDim2.new(0, 0, 0, 0)
     textLabel.BackgroundTransparency = 1
     textLabel.Text = text
     textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -214,121 +253,102 @@ local function CreateVisualToggle(parent, text, text_below)
         subTextLabel.Parent = textLabel
     end
 
-    -- El interruptor visual en sí
     local toggleSwitch = Instance.new("Frame")
-    toggleSwitch.Size = UDim2.new(0, 50, 0, 26) -- Proporciones estilo image_0.png
-    toggleSwitch.Position = UDim2.new(1, -55, 0.5, -13) -- A la derecha, centrado verticalmente
-    toggleSwitch.BackgroundColor3 = Color3.fromRGB(220, 220, 220) -- Color OFF por defecto (gris claro)
-    toggleSwitch.Active = true
+    toggleSwitch.Size = UDim2.new(0, 50, 0, 26)
+    toggleSwitch.Position = UDim2.new(1, -55, 0.5, -13)
+    toggleSwitch.BackgroundColor3 = Color3.fromRGB(220, 220, 220)
     toggleSwitch.Parent = toggleRow
-    local switchCorner = Instance.new("UICorner", toggleSwitch)
-    switchCorner.CornerRadius = UDim.new(1, 0) -- Totalmente redondeado
+    Instance.new("UICorner", toggleSwitch).CornerRadius = UDim.new(1, 0)
 
     local toggleSlider = Instance.new("Frame")
-    toggleSlider.Size = UDim2.new(0, 22, 0, 22) -- El círculo
-    toggleSlider.Position = UDim2.new(0, 2, 0, 2) -- Posición OFF por defecto (izquierda)
+    toggleSlider.Size = UDim2.new(0, 22, 0, 22)
+    toggleSlider.Position = UDim2.new(0, 2, 0, 2)
     toggleSlider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     toggleSlider.Parent = toggleSwitch
-    local sliderCorner = Instance.new("UICorner", toggleSlider)
-    sliderCorner.CornerRadius = UDim.new(1, 0) -- Totalmente redondeado
+    Instance.new("UICorner", toggleSlider).CornerRadius = UDim.new(1, 0)
 
-    return toggleSwitch, toggleSlider
+    local clickButton = Instance.new("TextButton")
+    clickButton.Size = UDim2.new(1, 0, 1, 0)
+    clickButton.BackgroundTransparency = 1
+    clickButton.Text = ""
+    clickButton.ZIndex = 10
+    clickButton.Parent = toggleRow
+
+    return toggleSwitch, toggleSlider, clickButton
 end
 
 -- ==========================================
--- CONTENIDO: PESTAÑA MAIN (Con selectores)
+-- CONTENIDO: PESTAÑA MAIN (Lógica)
 -- ==========================================
+local colorOn = Color3.fromRGB(50, 200, 50)
+local colorOff = Color3.fromRGB(220, 220, 220)
 
--- Servicios necesarios
-local VirtualUser = game:GetService("VirtualUser")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local pkSwitch, pkSlider, pkButton = CreateVisualToggle(MainContainer, "Perfect Kick")
+local afSwitch, afSlider, afButton = CreateVisualToggle(MainContainer, "Auto Farm", "Ir a Safe Zone rápido")
 
--- Definir colores para ON y OFF
-local colorOn = Color3.fromRGB(50, 200, 50) -- Verde image_0.png
-local colorOff = Color3.fromRGB(220, 220, 220) -- Gris image_0.png
-
--- Crear Toggles
-local pkSwitch, pkSlider = CreateVisualToggle(MainContainer, "Perfect Kick")
-local afSwitch, afSlider = CreateVisualToggle(MainContainer, "Auto Farm", "Go to Safe Zone fast")
-
--- Lógica de animación y estado
-local function HandleToggle(switch, slider, callback)
+local function HandleToggle(switch, slider, button, callback)
     local isOn = false
-    
-    switch.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            isOn = not isOn
-            
-            local switchTween, sliderTween
-            if isOn then
-                -- Tween a ON
-                switchTween = TweenService:Create(switch, TweenInfo.new(0.25), {BackgroundColor3 = colorOn})
-                sliderTween = TweenService:Create(slider, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(1, -24, 0, 2)})
-            else
-                -- Tween a OFF
-                switchTween = TweenService:Create(switch, TweenInfo.new(0.25), {BackgroundColor3 = colorOff})
-                sliderTween = TweenService:Create(slider, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(0, 2, 0, 2)})
-            end
-            
-            switchTween:Play()
-            sliderTween:Play()
-            
-            callback(isOn)
+    -- Usamos .Activated para máxima compatibilidad Móvil/PC
+    button.Activated:Connect(function()
+        isOn = not isOn
+        
+        local switchTween, sliderTween
+        if isOn then
+            switchTween = TweenService:Create(switch, TweenInfo.new(0.2), {BackgroundColor3 = colorOn})
+            sliderTween = TweenService:Create(slider, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Position = UDim2.new(1, -24, 0, 2)})
+        else
+            switchTween = TweenService:Create(switch, TweenInfo.new(0.2), {BackgroundColor3 = colorOff})
+            sliderTween = TweenService:Create(slider, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Position = UDim2.new(0, 2, 0, 2)})
         end
+        
+        switchTween:Play()
+        sliderTween:Play()
+        
+        callback(isOn)
     end)
 end
 
--- ==========================================
--- LÓGICA DE LAS FUNCIONES MAIN
--- ==========================================
-
--- Perfect Kick
+-- Funciones
 local pkActivo = false
-HandleToggle(pkSwitch, pkSlider, function(isOn)
+HandleToggle(pkSwitch, pkSlider, pkButton, function(isOn)
     pkActivo = isOn
     if pkActivo then
         task.spawn(function()
             while pkActivo do
                 VirtualUser:ClickButton1(Vector2.new(0,0))
-                task.wait(0.01) -- Velocidad ultra rápida optimizada
+                task.wait(0.01)
             end
         end)
     end
 end)
 
--- Auto Farm (Safe zone + Velocidad)
 local afActivo = false
-HandleToggle(afSwitch, afSlider, function(isOn)
+HandleToggle(afSwitch, afSlider, afButton, function(isOn)
     afActivo = isOn
     if afActivo then
-        -- Primero se asegura de teletransportar a la zona segura
         local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
         local humanoid = character:FindFirstChildOfClass("Humanoid")
         local rootPart = character:FindFirstChild("HumanoidRootPart")
         
         if humanoid and rootPart then
             humanoid.WalkSpeed = 100 
-            
             local safeZone = workspace:FindFirstChild("SpawnLocation", true)
             if safeZone and safeZone:IsA("SpawnLocation") then
                 rootPart.CFrame = safeZone.CFrame + Vector3.new(0, 5, 0)
             end
         end
         
-        -- Luego mantiene la velocidad mientras el toggle esté activo
         task.spawn(function()
             while afActivo do
                 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
                     LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 100
                 end
-                task.wait(1) -- Verifica y aplica velocidad cada segundo
+                task.wait(1)
             end
         end)
     else
-        -- Al apagar el toggle, restablece la velocidad
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16 -- Velocidad normal por defecto
+            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16 
         end
     end
 end)
