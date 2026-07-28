@@ -1,16 +1,16 @@
 -- ==========================================
--- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V1.4 (UNIVERSAL PC & MÓVIL)
--- Compatible con Delta Executor
+-- SCRIPT NATIVO: JoseAngel_Blox Kick Farm V1.1
+-- Universal (PC & Móvil) para Delta Executor
 -- ==========================================
 
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local VirtualUser = game:GetService("VirtualUser")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-local guiName = "JoseAngel_Blox_KickFarm_Universal"
+local guiName = "JoseAngel_Blox_KickFarm_V1.1"
 
 -- 1. Evitar ventanas duplicadas
 if CoreGui:FindFirstChild(guiName) then
@@ -135,7 +135,7 @@ Instance.new("UICorner", RightPanel).CornerRadius = UDim.new(0, 8)
 local InfoContainer = Instance.new("Frame")
 InfoContainer.Size = UDim2.new(1, 0, 1, 0)
 InfoContainer.BackgroundTransparency = 1
-InfoContainer.Visible = true 
+InfoContainer.Visible = true -- INFO VISIBLE POR DEFECTO
 InfoContainer.Parent = RightPanel
 
 local MainContainer = Instance.new("Frame")
@@ -160,7 +160,7 @@ UIPaddingInfo.PaddingLeft = UDim.new(0, 15)
 UIPaddingInfo.PaddingRight = UDim.new(0, 15)
 
 -- ==========================================
--- CREACIÓN DE PESTAÑAS
+-- CREACIÓN DE PESTAÑAS (INFO DE PRIMERO)
 -- ==========================================
 local UIListLayoutLeft = Instance.new("UIListLayout", LeftPanel)
 UIListLayoutLeft.Padding = UDim.new(0, 8)
@@ -218,8 +218,8 @@ end
 
 AddInfoText("Nombre del creador: JoseAngel_Blox")
 AddInfoText("Fecha de lanzamiento: 27/07/2026")
-AddInfoText("Versión: 1.4 (Universal)")
-AddInfoText("Update: Arrastre manual táctil y eventos de activación optimizados para PC y Móvil.")
+AddInfoText("Versión: 1.1")
+AddInfoText("Update: nuevo script con mayor compatibilidad, optimizado, sin lag")
 
 -- ==========================================
 -- COMPONENTE DE SELECTOR (TOGGLE UNIVERSAL)
@@ -278,17 +278,16 @@ local function CreateVisualToggle(parent, text, text_below)
 end
 
 -- ==========================================
--- CONTENIDO: PESTAÑA MAIN (Lógica)
+-- CONTENIDO: PESTAÑA MAIN (Lógica y Funciones)
 -- ==========================================
 local colorOn = Color3.fromRGB(50, 200, 50)
 local colorOff = Color3.fromRGB(220, 220, 220)
 
 local pkSwitch, pkSlider, pkButton = CreateVisualToggle(MainContainer, "Perfect Kick")
-local afSwitch, afSlider, afButton = CreateVisualToggle(MainContainer, "Auto Farm", "Ir a Safe Zone rápido")
+local afSwitch, afSlider, afButton = CreateVisualToggle(MainContainer, "Auto farm", "Regresar a safe zone rápido")
 
 local function HandleToggle(switch, slider, button, callback)
     local isOn = false
-    -- Usamos .Activated para máxima compatibilidad Móvil/PC
     button.Activated:Connect(function()
         isOn = not isOn
         
@@ -308,42 +307,59 @@ local function HandleToggle(switch, slider, button, callback)
     end)
 end
 
--- Funciones
+-- 1) Perfect Kick (Uso de rev_KickEvent para patear perfectamente)
 local pkActivo = false
 HandleToggle(pkSwitch, pkSlider, pkButton, function(isOn)
     pkActivo = isOn
     if pkActivo then
         task.spawn(function()
             while pkActivo do
-                VirtualUser:ClickButton1(Vector2.new(0,0))
-                task.wait(0.01)
+                local kickEvent = ReplicatedStorage:FindFirstChild("rev_KickEvent", true)
+                if kickEvent then
+                    kickEvent:FireServer("Perfect")
+                else
+                    game:GetService("VirtualUser"):ClickButton1(Vector2.new(0,0))
+                end
+                task.wait(0.05)
             end
         end)
     end
 end)
 
+-- 2) Auto farm (Correr automáticamente hacia la Safe Zone / KickReady)
 local afActivo = false
 HandleToggle(afSwitch, afSlider, afButton, function(isOn)
     afActivo = isOn
     if afActivo then
-        local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        local rootPart = character:FindFirstChild("HumanoidRootPart")
-        
-        if humanoid and rootPart then
-            humanoid.WalkSpeed = 100 
-            local safeZone = workspace:FindFirstChild("SpawnLocation", true)
-            if safeZone and safeZone:IsA("SpawnLocation") then
-                rootPart.CFrame = safeZone.CFrame + Vector3.new(0, 5, 0)
-            end
-        end
-        
         task.spawn(function()
             while afActivo do
-                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-                    LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 100
+                local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                local rootPart = character:FindFirstChild("HumanoidRootPart")
+                
+                if humanoid and rootPart then
+                    humanoid.WalkSpeed = 100 
+                    
+                    local safeZone = workspace:FindFirstChild("KickReady", true)
+                    if safeZone then
+                        local targetPos = nil
+                        if safeZone:IsA("BasePart") then
+                            targetPos = safeZone.Position
+                        elseif safeZone:IsA("Model") and safeZone.PrimaryPart then
+                            targetPos = safeZone.PrimaryPart.Position
+                        else
+                            local part = safeZone:FindFirstChildWhichIsA("BasePart", true)
+                            if part then
+                                targetPos = part.Position
+                            end
+                        end
+                        
+                        if targetPos then
+                            humanoid:MoveTo(targetPos)
+                        end
+                    end
                 end
-                task.wait(1)
+                task.wait(0.5)
             end
         end)
     else
