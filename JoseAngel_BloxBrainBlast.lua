@@ -1,5 +1,5 @@
 -- ==============================================================================
--- SCRIPT: JoseAngel_Blox BrainBlast (v1.1)
+-- SCRIPT: JoseAngel_Blox BrainBlast (v1.3 - Final Conectado)
 -- CREADO POR: JoseAngel_Blox
 -- COMPATIBILIDAD: Delta Executor (PC & Mobile) - SIN LIBRERÍAS
 -- ==============================================================================
@@ -18,7 +18,6 @@ LocalPlayer.Idled:Connect(function()
     VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
 end)
 
--- Eliminar GUI anterior si se ejecuta nuevamente
 if CoreGui:FindFirstChild("JoseAngel_Blox_GUI") then
     CoreGui.JoseAngel_Blox_GUI:Destroy()
 end
@@ -31,7 +30,7 @@ ScreenGui.Name = "JoseAngel_Blox_GUI"
 ScreenGui.Parent = CoreGui
 ScreenGui.ResetOnSpawn = false
 
--- Contenedor Principal (620x340 - Ancho y Bajo)
+-- Contenedor Principal (620x340)
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 620, 0, 340)
 MainFrame.Position = UDim2.new(0.5, -310, 0.5, -170)
@@ -45,7 +44,7 @@ local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = MainFrame
 
--- Cabecera / Título
+-- Título
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, -20, 0, 26)
 TitleLabel.Position = UDim2.new(0, 15, 0, 8)
@@ -91,7 +90,7 @@ TabPadding.PaddingLeft = UDim.new(0, 10)
 TabPadding.PaddingRight = UDim.new(0, 10)
 TabPadding.Parent = LeftPanel
 
--- Panel Derecho (Contenedor de Páginas)
+-- Panel Derecho (Contenido)
 local RightPanel = Instance.new("Frame")
 RightPanel.Size = UDim2.new(1, -195, 1, -65)
 RightPanel.Position = UDim2.new(0, 183, 0, 55)
@@ -103,7 +102,7 @@ RightCorner.CornerRadius = UDim.new(0, 10)
 RightCorner.Parent = RightPanel
 
 -- ==============================================================================
--- 2. SISTEMA DE PESTAÑAS Y CREACIÓN DE ELEMENTOS
+-- 2. SISTEMA DE PESTAÑAS Y CONTROLES
 -- ==============================================================================
 local Pages = {}
 local TabButtons = {}
@@ -220,7 +219,6 @@ local MainPage = CreateTab("Main", 2)
 local AdvPage = CreateTab("F. Avanzadas", 3)
 local ExtraPage = CreateTab("Extra Útiles", 4)
 
--- Activar pestaña 1 por defecto
 InfoPage.Visible = true
 TabButtons[1].BackgroundColor3 = Color3.fromRGB(0, 150, 235)
 TabButtons[1].TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -230,7 +228,7 @@ TabButtons[1].TextColor3 = Color3.fromRGB(255, 255, 255)
 -- ==============================================================================
 CreateLabel(InfoPage, "Nombre del Creador: JoseAngel_Blox")
 CreateLabel(InfoPage, "Fecha de lanzamiento: 01/08/2026")
-CreateLabel(InfoPage, "Versión: 1.1")
+CreateLabel(InfoPage, "Versión: 1.3 (Final)")
 CreateLabel(InfoPage, "Update: Nuevo Script sin Bugs")
 CreateLabel(InfoPage, "Mayor compatibilidad con Móviles y PC")
 
@@ -241,13 +239,38 @@ CreateToggle(MainPage, "Auto Lanzado Perfecto", function(state)
     getgenv().AutoLaunch = state
     task.spawn(function()
         while getgenv().AutoLaunch do
-            -- Envía evento al servidor con máxima potencia para el lanzamiento de bloque
-            for _, rem in pairs(game:GetDescendants()) do
-                if rem:IsA("RemoteEvent") and (rem.Name:lower():find("launch") or rem.Name:lower():find("throw") or rem.Name:lower():find("power")) then
-                    rem:FireServer(math.huge)
+            local rep = game:GetService("ReplicatedStorage")
+            local blastRemotes = rep:FindFirstChild("Remotes") and rep.Remotes:FindFirstChild("Blast")
+            
+            if blastRemotes then
+                if blastRemotes:FindFirstChild("ShowBlastButton") then
+                    blastRemotes.ShowBlastButton:FireServer()
+                end
+                if blastRemotes:FindFirstChild("BlastChargeStarted") then
+                    blastRemotes.BlastChargeStarted:FireServer()
+                end
+                if blastRemotes:FindFirstChild("BlastLaunched") then
+                    blastRemotes.BlastLaunched:FireServer(1)
                 end
             end
-            task.wait(1)
+            task.wait(1.5)
+        end
+    end)
+end)
+
+-- NUEVO: Auto Farm Correr a Zona (Debajo de Auto Lanzado Perfecto)
+CreateToggle(MainPage, "Auto Farm (Correr a Zona de Pateo)", function(state)
+    getgenv().AutoRunToBlast = state
+    task.spawn(function()
+        while getgenv().AutoRunToBlast do
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                local bZone = workspace:FindFirstChild("BlastZone")
+                if bZone and bZone:FindFirstChild("BlastArea") then
+                    -- Ordena al Humanoid correr continuamente hacia la zona de pateo
+                    LocalPlayer.Character.Humanoid:MoveTo(bZone.BlastArea.Position)
+                end
+            end
+            task.wait(0.5)
         end
     end)
 end)
@@ -256,16 +279,27 @@ CreateToggle(MainPage, "Auto Recolectar (Dinero/Brainrots)", function(state)
     getgenv().AutoCollect = state
     task.spawn(function()
         while getgenv().AutoCollect do
-            -- Teletransporta objetos caídos e interactuables directamente a tu personaje
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj:IsA("ProximityPrompt") then
-                        fireproximityprompt(obj)
-                    elseif obj:IsA("Tool") or (obj:IsA("BasePart") and obj.Name:lower():find("coin")) then
-                        obj.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
-                    end
+            local rep = game:GetService("ReplicatedStorage")
+            local baseRemotes = rep:FindFirstChild("Remotes") and rep.Remotes:FindFirstChild("Bases")
+            
+            if baseRemotes then
+                if baseRemotes:FindFirstChild("CollectCash") then
+                    baseRemotes.CollectCash:FireServer()
+                end
+                if baseRemotes:FindFirstChild("CashCollected") then
+                    baseRemotes.CashCollected:FireServer()
+                end
+                if baseRemotes:FindFirstChild("PickupBrainrot") then
+                    baseRemotes.PickupBrainrot:FireServer()
                 end
             end
+            
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("ProximityPrompt") then
+                    fireproximityprompt(obj)
+                end
+            end
+            
             task.wait(0.5)
         end
     end)
@@ -275,12 +309,27 @@ CreateToggle(MainPage, "Auto Entrenar x2", function(state)
     getgenv().AutoTrain = state
     task.spawn(function()
         while getgenv().AutoTrain do
-            for _, rem in pairs(game:GetDescendants()) do
-                if rem:IsA("RemoteEvent") and (rem.Name:lower():find("train") or rem.Name:lower():find("brain") or rem.Name:lower():find("click")) then
-                    rem:FireServer("x2")
+            local rep = game:GetService("ReplicatedStorage")
+            local trainRemotes = rep:FindFirstChild("Remotes") and rep.Remotes:FindFirstChild("Training")
+            
+            if trainRemotes then
+                if trainRemotes:FindFirstChild("ShowX2Button") then
+                    trainRemotes.ShowX2Button:FireServer(0)
+                end
+                if trainRemotes:FindFirstChild("IncrementText") then
+                    trainRemotes.IncrementText:FireServer()
                 end
             end
-            task.wait(0.1)
+            
+            if LocalPlayer.Character then
+                for _, tool in pairs(LocalPlayer.Character:GetChildren()) do
+                    if tool:IsA("Tool") then
+                        tool:Activate()
+                    end
+                end
+            end
+            
+            task.wait(0.05)
         end
     end)
 end)
@@ -291,7 +340,7 @@ CreateToggle(MainPage, "Auto Renacer (Requisito Cumplido)", function(state)
         while getgenv().AutoRebirth do
             for _, rem in pairs(game:GetDescendants()) do
                 if rem:IsA("RemoteEvent") and (rem.Name:lower():find("rebirth") or rem.Name:lower():find("prestige")) then
-                    rem:FireServer(true) -- Conservando potenciadores
+                    rem:FireServer(true)
                 end
             end
             task.wait(5)
@@ -314,7 +363,7 @@ CreateToggle(MainPage, "Auto Colocar Mejores Brainrots", function(state)
 end)
 
 -- ==============================================================================
--- 6. PESTAÑA 3: FUNCIONES AVANZADAS
+-- 6. PESTAÑA 3: FUNCIONES AVANZADAS (LIMPIA)
 -- ==============================================================================
 CreateToggle(AdvPage, "Auto Vender Repetidos/Bajos (Comunes)", function(state)
     getgenv().AutoSellLow = state
@@ -338,30 +387,6 @@ CreateButton(AdvPage, "Mejorar Todo (1-Click)", function()
     end
 end)
 
-CreateToggle(AdvPage, "Ver Rareza y Valor en Pantalla", function(state)
-    getgenv().ShowRarity = state
-    -- Sistema de ESP/Billboard para mostrar información del premio y generación/seg
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj:FindFirstChild("Rarity") then
-            if state and not obj:FindFirstChild("InfoTag") then
-                local bg = Instance.new("BillboardGui", obj)
-                bg.Name = "InfoTag"
-                bg.Size = UDim2.new(0, 100, 0, 40)
-                bg.AlwaysOnTop = true
-                local lbl = Instance.new("TextLabel", bg)
-                lbl.Size = UDim2.new(1, 0, 1, 0)
-                lbl.BackgroundTransparency = 1
-                lbl.Text = tostring(obj.Rarity.Value) .. " | $" .. tostring(obj:GetAttribute("GPS") or "0") .. "/s"
-                lbl.TextColor3 = Color3.fromRGB(255, 215, 0)
-                lbl.Font = Enum.Font.GothamBold
-                lbl.TextSize = 12
-            elseif not state and obj:FindFirstChild("InfoTag") then
-                obj.InfoTag:Destroy()
-            end
-        end
-    end
-end)
-
 CreateToggle(AdvPage, "Velocidad (50) & Salto Alto", function(state)
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         LocalPlayer.Character.Humanoid.WalkSpeed = state and 50 or 16
@@ -369,100 +394,39 @@ CreateToggle(AdvPage, "Velocidad (50) & Salto Alto", function(state)
     end
 end)
 
-CreateToggle(AdvPage, "Radar de Brainrots (Wallhack/ESP)", function(state)
-    getgenv().BrainrotRadar = state
-    task.spawn(function()
-        while getgenv().BrainrotRadar do
-            for _, obj in pairs(workspace:GetDescendants()) do
-                if obj:IsA("Model") and (obj.Name:lower():find("brainrot") or obj:GetAttribute("Legendary")) then
-                    if not obj:FindFirstChild("RadarHL") then
-                        local hl = Instance.new("Highlight")
-                        hl.Name = "RadarHL"
-                        hl.FillColor = Color3.fromRGB(170, 0, 255)
-                        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-                        hl.Parent = obj
-                    end
-                end
-            end
-            task.wait(2)
-        end
-        -- Limpiar radar al apagar
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:FindFirstChild("RadarHL") then obj.RadarHL:Destroy() end
-        end
-    end)
-end)
-
 -- ==============================================================================
--- 7. PESTAÑA 4: EXTRA ÚTILES
+-- 7. PESTAÑA 4: EXTRA ÚTILES (SOLO TPs CONECTADOS A Workspace)
 -- ==============================================================================
 CreateButton(ExtraPage, "Teletransporte: Ir a mi Base", function()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local base = workspace:FindFirstChild(LocalPlayer.Name .. "Base") or workspace:FindFirstChild("SpawnLocation")
-        if base then
-            LocalPlayer.Character.HumanoidRootPart.CFrame = base.CFrame + Vector3.new(0, 5, 0)
+        -- Busca en la carpeta Bases de Workspace tu base personal
+        local basesFolder = workspace:FindFirstChild("Bases")
+        if basesFolder then
+            for _, b in pairs(basesFolder:GetChildren()) do
+                -- Comprueba si la base te pertenece o busca el piso de aparición
+                if b.Name:lower():find(LocalPlayer.Name:lower()) or b:GetAttribute("Owner") == LocalPlayer.Name then
+                    local basePart = b:FindFirstChildWhichIsA("BasePart", true)
+                    if basePart then
+                        LocalPlayer.Character.HumanoidRootPart.CFrame = basePart.CFrame + Vector3.new(0, 6, 0)
+                        return
+                    end
+                end
+            end
+        end
+        -- Teletransporte de respaldo si la base no tiene tu nombre en el título
+        local spawnLoc = workspace:FindFirstChildWhichIsA("SpawnLocation", true)
+        if spawnLoc then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = spawnLoc.CFrame + Vector3.new(0, 6, 0)
         end
     end
 end)
 
 CreateButton(ExtraPage, "Teletransporte: Punto de Lanzamiento", function()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local launch = workspace:FindFirstChild("LaunchPoint") or workspace:FindFirstChild("Cannon")
-        if launch then
-            LocalPlayer.Character.HumanoidRootPart.CFrame = launch.CFrame + Vector3.new(0, 5, 0)
+        -- Se dirige exactamente a BlastZone -> BlastArea
+        local bZone = workspace:FindFirstChild("BlastZone")
+        if bZone and bZone:FindFirstChild("BlastArea") then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = bZone.BlastArea.CFrame + Vector3.new(0, 5, 0)
         end
-    end
-end)
-
-CreateToggle(ExtraPage, "Aviso de Premios Raros (Legendarios)", function(state)
-    getgenv().RareAlert = state
-    task.spawn(function()
-        while getgenv().RareAlert do
-            -- Envía notificación si detecta un drop legendario cerca
-            for _, obj in pairs(workspace:GetDescendants()) do
-                if obj:GetAttribute("Rarity") == "Legendary" or obj.Name:lower():find("legendary") then
-                    game:GetService("StarterGui"):SetCore("SendNotification", {
-                        Title = "¡BRAINROT LEGENDARIO!";
-                        Text = "¡Se ha detectado un drop exclusivo en el mapa!";
-                        Duration = 3;
-                    })
-                    task.wait(5)
-                end
-            end
-            task.wait(1.5)
-        end
-    end)
-end)
-
-CreateToggle(ExtraPage, "Protección Anti-Vacío (Anti-Void)", function(state)
-    getgenv().AntiVoid = state
-    task.spawn(function()
-        while getgenv().AntiVoid do
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                if LocalPlayer.Character.HumanoidRootPart.Position.Y < -30 then
-                    -- Te regresa al punto seguro de reaparición si caes al vacío
-                    LocalPlayer.Character.HumanoidRootPart.Velocity = Vector3.zero
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 35, 0)
-                end
-            end
-            task.wait(0.2)
-        end
-    end)
-end)
-
-CreateButton(ExtraPage, "Guardar Configuración", function()
-    -- Guarda tu configuración actual como archivo JSON en el Executor
-    if writefile then
-        local config = {
-            AutoLaunch = getgenv().AutoLaunch or false,
-            AutoCollect = getgenv().AutoCollect or false,
-            AutoTrain = getgenv().AutoTrain or false
-        }
-        writefile("JoseAngel_BrainBlast_Config.json", game:GetService("HttpService"):JSONEncode(config))
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "JoseAngel_Blox";
-            Text = "Configuración guardada en tu dispositivo.";
-            Duration = 3;
-        })
     end
 end)
