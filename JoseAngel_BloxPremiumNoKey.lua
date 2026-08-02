@@ -1,21 +1,24 @@
 -- ==========================================
 -- Script: JoseAngel_Blox premium no key
 -- Creador: JoseAngel_Blox
--- Versión: 1.1 | Fecha: 02/08/2026
+-- Versión: 1.5 | Fecha: 02/08/2026
+-- UPDATE: Título Rainbow multicolor en ola + todas las funciones optimizadas
 -- ==========================================
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
+local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
--- 1. CACHÉ DE REMOTOS (TU AUTO KICK)
+-- 1. CACHÉ DE REMOTOS (AUTO KICK & MULTIPLIER)
 -- ==========================================
 local Network = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
 local KickEvent = Network:WaitForChild("rev_KickEvent")
+local MultiplierEvent = Network:WaitForChild("rev_TaviMishkal")
 local kickArgs = {1, 1}
 
 -- Variables de control globales
@@ -26,9 +29,38 @@ getgenv().AutoClickX2 = false
 getgenv().IntervaloX2 = 1 -- Segundos por defecto (1 segundo)
 
 -- ==========================================
--- 2. CREACIÓN DE LA INTERFAZ (GUI COMPACTA)
+-- 2. FUNCIÓN PARA RECLAMAR TODOS LOS BOTONES MORADOS X2
 -- ==========================================
--- Limpiar GUI previa si existe
+local function reclamarTodosLosBotonesX2()
+    pcall(function()
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if not playerGui then return end
+        
+        for _, elemento in pairs(playerGui:GetDescendants()) do
+            if (elemento:IsA("ImageButton") or elemento:IsA("TextButton")) and elemento.Visible then
+                local nombre = string.lower(elemento.Name)
+                local texto = string.lower(elemento.Text or "")
+                
+                if string.find(nombre, "x2") or string.find(texto, "x2") or string.find(nombre, "multiplier") or string.find(nombre, "claim") or string.find(nombre, "boost") then
+                    pcall(function()
+                        elemento:Activate()
+                    end)
+                    
+                    pcall(function()
+                        if firesignal then
+                            firesignal(elemento.MouseButton1Click)
+                            firesignal(elemento.Activated)
+                        end
+                    end)
+                end
+            end
+        end
+    end)
+end
+
+-- ==========================================
+-- 3. CREACIÓN DE LA INTERFAZ (GUI COMPACTA)
+-- ==========================================
 if CoreGui:FindFirstChild("JoseAngel_Blox_GUI") then
     CoreGui.JoseAngel_Blox_GUI:Destroy()
 end
@@ -52,7 +84,7 @@ MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = MainFrame
 
 -- ==========================================
--- 3. CABECERA (TÍTULO RAINBOW & SUBTÍTULO)
+-- 4. CABECERA (TÍTULO RAINBOW MULTICOLOR EN OLA & SUBTÍTULO)
 -- ==========================================
 local HeaderFrame = Instance.new("Frame")
 HeaderFrame.Size = UDim2.new(1, 0, 0, 50)
@@ -66,14 +98,25 @@ TitleLabel.BackgroundTransparency = 1
 TitleLabel.Text = "JoseAngel_Blox premium no key"
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextSize = 18
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- Blanco para que el gradiente se note puro
 TitleLabel.Parent = HeaderFrame
 
--- Animación Rainbow para el Título
+-- UIGradient para el efecto Arcoíris real en las letras
+local TitleGradient = Instance.new("UIGradient")
+TitleGradient.Parent = TitleLabel
+
+-- Animación de Ola Arcoíris continua (desplaza múltiples colores de izquierda a derecha)
 task.spawn(function()
-    local hue = 0
+    local offsetHue = 0
     while task.wait() do
-        hue = (hue + 1) % 360
-        TitleLabel.TextColor3 = Color3.fromHSV(hue / 360, 0.85, 1)
+        offsetHue = (offsetHue + 0.006) % 1
+        local keypoints = {}
+        for i = 0, 10 do
+            local time = i / 10
+            local hue = (time + offsetHue) % 1
+            table.insert(keypoints, ColorSequenceKeypoint.new(time, Color3.fromHSV(hue, 0.85, 1)))
+        end
+        TitleGradient.Color = ColorSequence.new(keypoints)
     end
 end)
 
@@ -88,7 +131,7 @@ SubTitleLabel.TextSize = 12
 SubTitleLabel.Parent = HeaderFrame
 
 -- ==========================================
--- 4. PESTAÑAS (IZQUIERDA) Y CONTENEDORES (DERECHA)
+-- 5. PESTAÑAS (IZQUIERDA) Y CONTENEDORES (DERECHA)
 -- ==========================================
 local TabContainer = Instance.new("Frame")
 TabContainer.Size = UDim2.new(0, 110, 1, -60)
@@ -110,7 +153,6 @@ local ContentCorner = Instance.new("UICorner")
 ContentCorner.CornerRadius = UDim.new(0, 10)
 ContentCorner.Parent = ContentContainer
 
--- Marcos de Pestañas
 local InfoPage = Instance.new("ScrollingFrame")
 InfoPage.Size = UDim2.new(1, -16, 1, -16)
 InfoPage.Position = UDim2.new(0, 8, 0, 8)
@@ -128,13 +170,11 @@ MainPage.ScrollBarThickness = 3
 MainPage.CanvasSize = UDim2.new(0, 0, 0, 260)
 MainPage.Parent = ContentContainer
 
--- Función para cambiar de Pestaña
 local function switchTab(tab)
     InfoPage.Visible = (tab == "Info")
     MainPage.Visible = (tab == "Main")
 end
 
--- Botón Pestaña: Info
 local InfoBtn = Instance.new("TextButton")
 InfoBtn.Size = UDim2.new(1, -16, 0, 35)
 InfoBtn.Position = UDim2.new(0, 8, 0, 10)
@@ -147,7 +187,6 @@ InfoBtn.Parent = TabContainer
 Instance.new("UICorner", InfoBtn).CornerRadius = UDim.new(0, 8)
 InfoBtn.MouseButton1Click:Connect(function() switchTab("Info") end)
 
--- Botón Pestaña: Main
 local MainBtn = Instance.new("TextButton")
 MainBtn.Size = UDim2.new(1, -16, 0, 35)
 MainBtn.Position = UDim2.new(0, 8, 0, 55)
@@ -161,7 +200,7 @@ Instance.new("UICorner", MainBtn).CornerRadius = UDim.new(0, 8)
 MainBtn.MouseButton1Click:Connect(function() switchTab("Main") end)
 
 -- ==========================================
--- 5. CONTENIDO DE PESTAÑA: INFO
+-- 6. CONTENIDO DE PESTAÑA: INFO
 -- ==========================================
 local InfoText = Instance.new("TextLabel")
 InfoText.Size = UDim2.new(1, 0, 1, 0)
@@ -174,12 +213,12 @@ InfoText.TextSize = 12
 InfoText.TextWrapped = true
 InfoText.Text = "Nombre del Creador: JoseAngel_Blox\n\n" ..
                 "Fecha de lanzamiento: 02/08/2026\n\n" ..
-                "Versión: 1.1\n\n" ..
+                "Versión: 1.5\n\n" ..
                 "UPDATE: Script Premium gratis 100%funcional compartible para celular y PC 0 Bugs espero y te guste el script."
 InfoText.Parent = InfoPage
 
 -- ==========================================
--- 6. CONTENIDO DE PESTAÑA: MAIN (FUNCIONES)
+-- 7. CONTENIDO DE PESTAÑA: MAIN (FUNCIONES)
 -- ==========================================
 local function createButton(name, posY, callback)
     local btn = Instance.new("TextButton")
@@ -221,20 +260,36 @@ createButton("Auto Kick", 0, function(state)
     end
 end)
 
--- 2) Auto Farm con 1000 de velocidad
+-- 2) Auto Farm con 1000 de velocidad (Correr a Safe Zone: KickReady)
 createButton("Auto Farm (1000 Vel)", 40, function(state)
     getgenv().AutoFarm1000 = state
     if state then
         task.spawn(function()
             while getgenv().AutoFarm1000 do
                 pcall(function()
-                    -- Envío ultrarrápido y aumento de velocidad de movimiento
                     KickEvent:FireServer(unpack(kickArgs))
-                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                        LocalPlayer.Character.Humanoid.WalkSpeed = 100
+                    
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChild("Humanoid") and char:FindFirstChild("HumanoidRootPart") then
+                        char.Humanoid.WalkSpeed = 1000
+                        
+                        local areas = Workspace:FindFirstChild("Areas")
+                        if areas and areas:FindFirstChild("KickReady") then
+                            local safeZone = areas.KickReady
+                            if safeZone:IsA("BasePart") then
+                                char.Humanoid:MoveTo(safeZone.Position)
+                            elseif safeZone:IsA("Model") and safeZone.PrimaryPart then
+                                char.Humanoid:MoveTo(safeZone.PrimaryPart.Position)
+                            else
+                                local parte = safeZone:FindFirstChildWhichIsA("BasePart", true)
+                                if parte then
+                                    char.Humanoid:MoveTo(parte.Position)
+                                end
+                            end
+                        end
                     end
                 end)
-                task.wait() -- Máxima velocidad sin espera
+                task.wait(0.1)
             end
         end)
     else
@@ -244,35 +299,28 @@ createButton("Auto Farm (1000 Vel)", 40, function(state)
     end
 end)
 
--- 3) Multiplier x2
+-- 3) Multiplier x2 (rev_TaviMishkal)
 createButton("Multiplier x2", 80, function(state)
     getgenv().MultiplierX2 = state
     if state then
         task.spawn(function()
             while getgenv().MultiplierX2 do
                 pcall(function()
-                    -- Intento de reclamar multiplicador del servidor
-                    local Remotes = ReplicatedStorage:FindFirstChild("Shared"):FindFirstChild("Packages"):FindFirstChild("Network")
-                    if Remotes and Remotes:FindFirstChild("rev_ClaimMultiplier") then
-                        Remotes.rev_ClaimMultiplier:FireServer(2)
-                    end
+                    MultiplierEvent:FireServer()
                 end)
-                task.wait(5)
+                task.wait(2)
             end
         end)
     end
 end)
 
--- 4) Auto Click x2
+-- 4) Auto Click x2 (RECLAMA TODOS LOS BOTONES MORADOS X2 DE LA PANTALLA)
 createButton("Auto Click x2", 120, function(state)
     getgenv().AutoClickX2 = state
     if state then
         task.spawn(function()
             while getgenv().AutoClickX2 do
-                pcall(function()
-                    KickEvent:FireServer(unpack(kickArgs))
-                end)
-                -- Espera el tiempo configurado en la lista de abajo
+                reclamarTodosLosBotonesX2()
                 task.wait(getgenv().IntervaloX2)
             end
         end)
@@ -313,4 +361,4 @@ TimeSelectorBtn.MouseButton1Click:Connect(function()
     TimeSelectorBtn.Text = "Tiempo Auto Click x2: " .. nombreSeleccionado
 end)
 
-print("[JoseAngel_Blox] Script cargado correctamente - v1.1")
+print("[JoseAngel_Blox] Script cargado correctamente - v1.5")
