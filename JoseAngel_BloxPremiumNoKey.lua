@@ -1,8 +1,8 @@
 -- ==========================================
 -- Script: JoseAngel_Blox premium no key
 -- Creador: JoseAngel_Blox
--- Versión: 2.2 | Fecha: 02/08/2026
--- UPDATE: Añadido Auto Collect Cash con ForcedTP + Fix de fondo rbxthumb
+-- Versión: 2.3 | Fecha: 02/08/2026
+-- UPDATE: Fix de seguridad para getconnections (Evita error nil value en ejecutores móviles)
 -- ==========================================
 
 local Players = game:GetService("Players")
@@ -32,13 +32,13 @@ getgenv().AutoClickX2 = false
 getgenv().AutoCollectCash = false
 getgenv().IntervaloX2 = 1
 
-local lockedPlot = nil -- Guarda la parcela (plot) donde estás
+local lockedPlot = nil
 
 -- ==========================================
 -- 2. FUNCIONES DE AUTOCLICK Y AUTOCOLLECT
 -- ==========================================
 
--- A) AUTO CLICK X2 (Conexiones remotas de interfaz)
+-- A) AUTO CLICK X2 (Protegido por si el ejecutor no soporta getconnections)
 local function clickBonus(bonus)
     if not bonus then return end
     
@@ -52,7 +52,8 @@ local function clickBonus(bonus)
         local targets = {bonus}
         if imgLabel then table.insert(targets, imgLabel) end
         
-        if getconnections then
+        -- Verificación segura de getconnections
+        if type(getconnections) == "function" then
             for _, target in pairs(targets) do
                 pcall(function()
                     for _, conn in pairs(getconnections(target.InputBegan)) do
@@ -105,7 +106,7 @@ local function startAutoClickX2()
     end)
 end
 
--- B) AUTO COLLECT CASH (TP Forzado + Remotos de recolección)
+-- B) AUTO COLLECT CASH
 local function ForcedTP(targetCFrame)
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -172,7 +173,7 @@ local function startAutoCollectCash()
 end
 
 -- ==========================================
--- 3. CREACIÓN DE LA INTERFAZ (GUI COMPACTA CON FONDO)
+-- 3. CREACIÓN DE LA INTERFAZ
 -- ==========================================
 if CoreGui:FindFirstChild("JoseAngel_Blox_GUI") then
     CoreGui.JoseAngel_Blox_GUI:Destroy()
@@ -196,7 +197,7 @@ MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = MainFrame
 
 -- ==========================================
--- 3.1 IMAGEN DE FONDO (RBXTHUMB FIX)
+-- 3.1 IMAGEN DE FONDO
 -- ==========================================
 local BackgroundImage = Instance.new("ImageLabel")
 BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
@@ -224,7 +225,7 @@ OverlayCorner.CornerRadius = UDim.new(0, 14)
 OverlayCorner.Parent = DarkOverlay
 
 -- ==========================================
--- 4. CABECERA (TÍTULO RAINBOW)
+-- 4. CABECERA
 -- ==========================================
 local HeaderFrame = Instance.new("Frame")
 HeaderFrame.Size = UDim2.new(1, 0, 0, 50)
@@ -307,7 +308,7 @@ MainPage.Position = UDim2.new(0, 8, 0, 8)
 MainPage.BackgroundTransparency = 1
 MainPage.Visible = false
 MainPage.ScrollBarThickness = 3
-MainPage.CanvasSize = UDim2.new(0, 0, 0, 360) -- Ampliado para que quepan todos los botones
+MainPage.CanvasSize = UDim2.new(0, 0, 0, 360)
 MainPage.ZIndex = 4
 MainPage.Parent = ContentContainer
 
@@ -357,12 +358,12 @@ InfoText.TextWrapped = true
 InfoText.ZIndex = 4
 InfoText.Text = "Nombre del Creador: JoseAngel_Blox\n\n" ..
                 "Fecha de lanzamiento: 02/08/2026\n\n" ..
-                "Versión: 2.2\n\n" ..
-                "UPDATE: Auto Collect Cash con ForcedTP + Auto Click x2 con getconnections integrados en un diseño Pro con fondo personalizado."
+                "Versión: 2.3\n\n" ..
+                "UPDATE: Protección en getconnections implementada para evitar bloqueos en ejecutores móviles."
 InfoText.Parent = InfoPage
 
 -- ==========================================
--- 7. GENERADOR DE TOGGLES ANIMADOS (PRO)
+-- 7. GENERADOR DE TOGGLES ANIMADOS
 -- ==========================================
 local function createToggle(name, posY, callback)
     local container = Instance.new("TextButton")
@@ -428,7 +429,6 @@ end
 -- 8. REGISTRO DE TOGGLES Y SELECTORES
 -- ==========================================
 
--- 1) Auto Kick
 createToggle("Auto Kick", 0, function(state)
     getgenv().AutoKick = state
     if state then
@@ -441,7 +441,6 @@ createToggle("Auto Kick", 0, function(state)
     end
 end)
 
--- 2) Auto Farm (Safe Zone)
 createToggle("Auto Farm (Safe Zone)", 44, function(state)
     getgenv().AutoFarm = state
     if state then
@@ -480,7 +479,6 @@ createToggle("Auto Farm (Safe Zone)", 44, function(state)
     end
 end)
 
--- 3) Multiplier x2
 createToggle("Multiplier x2", 88, function(state)
     getgenv().MultiplierX2 = state
     if state then
@@ -493,7 +491,6 @@ createToggle("Multiplier x2", 88, function(state)
     end
 end)
 
--- 4) Auto Click x2 (Bonuses)
 createToggle("Auto Click x2 (Bonuses)", 132, function(state)
     getgenv().AutoClickX2 = state
     if state then
@@ -501,7 +498,6 @@ createToggle("Auto Click x2 (Bonuses)", 132, function(state)
     end
 end)
 
--- 5) Auto Collect Cash (¡NUEVO!)
 createToggle("Auto Collect Cash", 176, function(state)
     getgenv().AutoCollectCash = state
     if state then
@@ -509,7 +505,6 @@ createToggle("Auto Collect Cash", 176, function(state)
     end
 end)
 
--- 6) Selector de Velocidad para Auto Farm
 local opcionesVelocidad = {
     {"Velocidad Farm: 200", 200},
     {"Velocidad Farm: 500", 500},
@@ -539,7 +534,6 @@ SpeedSelectorBtn.MouseButton1Click:Connect(function()
     SpeedSelectorBtn.Text = "Auto Farm -> " .. opcionesVelocidad[indiceVel][1]
 end)
 
--- 7) Selector de Frecuencia para Check X2
 local opcionesTiempo = {
     {"0.1 segundo (Rápido)", 0.1},
     {"1 segundo", 1},
@@ -550,4 +544,11 @@ local indiceTiempo = 1
 
 local TimeSelectorBtn = Instance.new("TextButton")
 TimeSelectorBtn.Size = UDim2.new(1, 0, 0, 34)
-TimeSel
+TimeSelectorBtn.Position = UDim2.new(0, 0, 0, 266)
+TimeSelectorBtn.BackgroundColor3 = Color3.fromRGB(40, 75, 110)
+TimeSelectorBtn.Text = "Frecuencia Check X2: 0.1s"
+TimeSelectorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TimeSelectorBtn.Font = Enum.Font.GothamBold
+TimeSelectorBtn.TextSize = 12
+TimeSelectorBtn.ZIndex = 4
+Tim
