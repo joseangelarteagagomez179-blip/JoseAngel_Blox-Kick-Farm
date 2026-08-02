@@ -1,0 +1,316 @@
+-- ==========================================
+-- Script: JoseAngel_Blox premium no key
+-- Creador: JoseAngel_Blox
+-- Versión: 1.1 | Fecha: 02/08/2026
+-- ==========================================
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- ==========================================
+-- 1. CACHÉ DE REMOTOS (TU AUTO KICK)
+-- ==========================================
+local Network = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
+local KickEvent = Network:WaitForChild("rev_KickEvent")
+local kickArgs = {1, 1}
+
+-- Variables de control globales
+getgenv().AutoKick = false
+getgenv().AutoFarm1000 = false
+getgenv().MultiplierX2 = false
+getgenv().AutoClickX2 = false
+getgenv().IntervaloX2 = 1 -- Segundos por defecto (1 segundo)
+
+-- ==========================================
+-- 2. CREACIÓN DE LA INTERFAZ (GUI COMPACTA)
+-- ==========================================
+-- Limpiar GUI previa si existe
+if CoreGui:FindFirstChild("JoseAngel_Blox_GUI") then
+    CoreGui.JoseAngel_Blox_GUI:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "JoseAngel_Blox_GUI"
+ScreenGui.Parent = CoreGui
+
+-- Marco Principal (Cuadrado Pequeño con Esquinas Redondeadas)
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 420, 0, 310)
+MainFrame.Position = UDim2.new(0.5, -210, 0.5, -155)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 14)
+MainCorner.Parent = MainFrame
+
+-- ==========================================
+-- 3. CABECERA (TÍTULO RAINBOW & SUBTÍTULO)
+-- ==========================================
+local HeaderFrame = Instance.new("Frame")
+HeaderFrame.Size = UDim2.new(1, 0, 0, 50)
+HeaderFrame.BackgroundTransparency = 1
+HeaderFrame.Parent = MainFrame
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, 0, 0, 28)
+TitleLabel.Position = UDim2.new(0, 0, 0, 4)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "JoseAngel_Blox premium no key"
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextSize = 18
+TitleLabel.Parent = HeaderFrame
+
+-- Animación Rainbow para el Título
+task.spawn(function()
+    local hue = 0
+    while task.wait() do
+        hue = (hue + 1) % 360
+        TitleLabel.TextColor3 = Color3.fromHSV(hue / 360, 0.85, 1)
+    end
+end)
+
+local SubTitleLabel = Instance.new("TextLabel")
+SubTitleLabel.Size = UDim2.new(1, 0, 0, 18)
+SubTitleLabel.Position = UDim2.new(0, 0, 0, 28)
+SubTitleLabel.BackgroundTransparency = 1
+SubTitleLabel.Text = "Creado por JoseAngel_Blox"
+SubTitleLabel.TextColor3 = Color3.fromRGB(170, 170, 180)
+SubTitleLabel.Font = Enum.Font.Gotham
+SubTitleLabel.TextSize = 12
+SubTitleLabel.Parent = HeaderFrame
+
+-- ==========================================
+-- 4. PESTAÑAS (IZQUIERDA) Y CONTENEDORES (DERECHA)
+-- ==========================================
+local TabContainer = Instance.new("Frame")
+TabContainer.Size = UDim2.new(0, 110, 1, -60)
+TabContainer.Position = UDim2.new(0, 10, 0, 55)
+TabContainer.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+TabContainer.Parent = MainFrame
+
+local TabCorner = Instance.new("UICorner")
+TabCorner.CornerRadius = UDim.new(0, 10)
+TabCorner.Parent = TabContainer
+
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Size = UDim2.new(1, -140, 1, -60)
+ContentContainer.Position = UDim2.new(0, 130, 0, 55)
+ContentContainer.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+ContentContainer.Parent = MainFrame
+
+local ContentCorner = Instance.new("UICorner")
+ContentCorner.CornerRadius = UDim.new(0, 10)
+ContentCorner.Parent = ContentContainer
+
+-- Marcos de Pestañas
+local InfoPage = Instance.new("ScrollingFrame")
+InfoPage.Size = UDim2.new(1, -16, 1, -16)
+InfoPage.Position = UDim2.new(0, 8, 0, 8)
+InfoPage.BackgroundTransparency = 1
+InfoPage.Visible = true
+InfoPage.ScrollBarThickness = 3
+InfoPage.Parent = ContentContainer
+
+local MainPage = Instance.new("ScrollingFrame")
+MainPage.Size = UDim2.new(1, -16, 1, -16)
+MainPage.Position = UDim2.new(0, 8, 0, 8)
+MainPage.BackgroundTransparency = 1
+MainPage.Visible = false
+MainPage.ScrollBarThickness = 3
+MainPage.CanvasSize = UDim2.new(0, 0, 0, 260)
+MainPage.Parent = ContentContainer
+
+-- Función para cambiar de Pestaña
+local function switchTab(tab)
+    InfoPage.Visible = (tab == "Info")
+    MainPage.Visible = (tab == "Main")
+end
+
+-- Botón Pestaña: Info
+local InfoBtn = Instance.new("TextButton")
+InfoBtn.Size = UDim2.new(1, -16, 0, 35)
+InfoBtn.Position = UDim2.new(0, 8, 0, 10)
+InfoBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+InfoBtn.Text = "Info"
+InfoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+InfoBtn.Font = Enum.Font.GothamBold
+InfoBtn.TextSize = 14
+InfoBtn.Parent = TabContainer
+Instance.new("UICorner", InfoBtn).CornerRadius = UDim.new(0, 8)
+InfoBtn.MouseButton1Click:Connect(function() switchTab("Info") end)
+
+-- Botón Pestaña: Main
+local MainBtn = Instance.new("TextButton")
+MainBtn.Size = UDim2.new(1, -16, 0, 35)
+MainBtn.Position = UDim2.new(0, 8, 0, 55)
+MainBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+MainBtn.Text = "Main"
+MainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MainBtn.Font = Enum.Font.GothamBold
+MainBtn.TextSize = 14
+MainBtn.Parent = TabContainer
+Instance.new("UICorner", MainBtn).CornerRadius = UDim.new(0, 8)
+MainBtn.MouseButton1Click:Connect(function() switchTab("Main") end)
+
+-- ==========================================
+-- 5. CONTENIDO DE PESTAÑA: INFO
+-- ==========================================
+local InfoText = Instance.new("TextLabel")
+InfoText.Size = UDim2.new(1, 0, 1, 0)
+InfoText.BackgroundTransparency = 1
+InfoText.TextXAlignment = Enum.TextXAlignment.Left
+InfoText.TextYAlignment = Enum.TextYAlignment.Top
+InfoText.TextColor3 = Color3.fromRGB(230, 230, 240)
+InfoText.Font = Enum.Font.Gotham
+InfoText.TextSize = 12
+InfoText.TextWrapped = true
+InfoText.Text = "Nombre del Creador: JoseAngel_Blox\n\n" ..
+                "Fecha de lanzamiento: 02/08/2026\n\n" ..
+                "Versión: 1.1\n\n" ..
+                "UPDATE: Script Premium gratis 100%funcional compartible para celular y PC 0 Bugs espero y te guste el script."
+InfoText.Parent = InfoPage
+
+-- ==========================================
+-- 6. CONTENIDO DE PESTAÑA: MAIN (FUNCIONES)
+-- ==========================================
+local function createButton(name, posY, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 32)
+    btn.Position = UDim2.new(0, 0, 0, posY)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 75)
+    btn.Text = name .. " [OFF]"
+    btn.TextColor3 = Color3.fromRGB(255, 100, 100)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 13
+    btn.Parent = MainPage
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        if state then
+            btn.Text = name .. " [ON]"
+            btn.TextColor3 = Color3.fromRGB(100, 255, 100)
+        else
+            btn.Text = name .. " [OFF]"
+            btn.TextColor3 = Color3.fromRGB(255, 100, 100)
+        end
+        callback(state)
+    end)
+    return btn
+end
+
+-- 1) Auto Kick
+createButton("Auto Kick", 0, function(state)
+    getgenv().AutoKick = state
+    if state then
+        task.spawn(function()
+            while getgenv().AutoKick do
+                pcall(function() KickEvent:FireServer(unpack(kickArgs)) end)
+                task.wait(0.05)
+            end
+        end)
+    end
+end)
+
+-- 2) Auto Farm con 1000 de velocidad
+createButton("Auto Farm (1000 Vel)", 40, function(state)
+    getgenv().AutoFarm1000 = state
+    if state then
+        task.spawn(function()
+            while getgenv().AutoFarm1000 do
+                pcall(function()
+                    -- Envío ultrarrápido y aumento de velocidad de movimiento
+                    KickEvent:FireServer(unpack(kickArgs))
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                        LocalPlayer.Character.Humanoid.WalkSpeed = 100
+                    end
+                end)
+                task.wait() -- Máxima velocidad sin espera
+            end
+        end)
+    else
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = 16
+        end
+    end
+end)
+
+-- 3) Multiplier x2
+createButton("Multiplier x2", 80, function(state)
+    getgenv().MultiplierX2 = state
+    if state then
+        task.spawn(function()
+            while getgenv().MultiplierX2 do
+                pcall(function()
+                    -- Intento de reclamar multiplicador del servidor
+                    local Remotes = ReplicatedStorage:FindFirstChild("Shared"):FindFirstChild("Packages"):FindFirstChild("Network")
+                    if Remotes and Remotes:FindFirstChild("rev_ClaimMultiplier") then
+                        Remotes.rev_ClaimMultiplier:FireServer(2)
+                    end
+                end)
+                task.wait(5)
+            end
+        end)
+    end
+end)
+
+-- 4) Auto Click x2
+createButton("Auto Click x2", 120, function(state)
+    getgenv().AutoClickX2 = state
+    if state then
+        task.spawn(function()
+            while getgenv().AutoClickX2 do
+                pcall(function()
+                    KickEvent:FireServer(unpack(kickArgs))
+                end)
+                -- Espera el tiempo configurado en la lista de abajo
+                task.wait(getgenv().IntervaloX2)
+            end
+        end)
+    end
+end)
+
+-- 5) Lista/Selector de Tiempo para Auto Click x2
+local opcionesTiempo = {
+    {"1 segundo", 1},
+    {"1 minuto", 60},
+    {"2 minutos", 120},
+    {"5 minutos", 300},
+    {"10 minutos", 600}
+}
+local indiceActual = 1
+
+local TimeSelectorBtn = Instance.new("TextButton")
+TimeSelectorBtn.Size = UDim2.new(1, 0, 0, 32)
+TimeSelectorBtn.Position = UDim2.new(0, 0, 0, 160)
+TimeSelectorBtn.BackgroundColor3 = Color3.fromRGB(45, 80, 110)
+TimeSelectorBtn.Text = "Tiempo Auto Click x2: 1 segundo"
+TimeSelectorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TimeSelectorBtn.Font = Enum.Font.GothamBold
+TimeSelectorBtn.TextSize = 12
+TimeSelectorBtn.Parent = MainPage
+Instance.new("UICorner", TimeSelectorBtn).CornerRadius = UDim.new(0, 6)
+
+TimeSelectorBtn.MouseButton1Click:Connect(function()
+    indiceActual = indiceActual + 1
+    if indiceActual > #opcionesTiempo then
+        indiceActual = 1
+    end
+    
+    local nombreSeleccionado = opcionesTiempo[indiceActual][1]
+    local segundosSeleccionados = opcionesTiempo[indiceActual][2]
+    
+    getgenv().IntervaloX2 = segundosSeleccionados
+    TimeSelectorBtn.Text = "Tiempo Auto Click x2: " .. nombreSeleccionado
+end)
+
+print("[JoseAngel_Blox] Script cargado correctamente - v1.1")
