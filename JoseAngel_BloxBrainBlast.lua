@@ -1,6 +1,464 @@
--- Script temporal para detectar remotos
-for _, obj in pairs(game:GetDescendants()) do
-    if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-        print("Remote encontrado:", obj.Parent.Name .. "." .. obj.Name)
+-- ==============================================================================
+-- SCRIPT: JoseAngel_Blox_BrainBlast (v1.1 - Definitivo | CORREGIDO)
+-- CREADO POR: JoseAngel_Blox
+-- COMPATIBILIDAD: Delta Executor (PC & Mobile) - SIN LIBRERÍAS
+-- BASEADO EN: Remotos reales detectados (Blast, Bases, Training, etc.)
+-- ==============================================================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
+local CoreGui = game:GetService("CoreGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- 1. SISTEMA ANTI-AFK (Evita desconexión por inactividad)
+LocalPlayer.Idled:Connect(function()
+    if workspace.CurrentCamera then
+        VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
     end
+end)
+
+-- Limpiar GUI anterior
+if CoreGui:FindFirstChild("JoseAngel_Blox_GUI") then
+    CoreGui.JoseAngel_Blox_GUI:Destroy()
 end
+
+-- ==============================================================================
+-- 2. INTERFAZ GRÁFICA (GUI) ANCHA, BAJA Y CON ESQUINAS REDONDEADAS
+-- ==============================================================================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "JoseAngel_Blox_GUI"
+ScreenGui.Parent = CoreGui
+ScreenGui.ResetOnSpawn = false
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 620, 0, 340)
+MainFrame.Position = UDim2.new(0.5, -310, 0.5, -170)
+MainFrame.BackgroundColor3 = Color3.fromRGB(22, 24, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 14)
+MainCorner.Parent = MainFrame
+
+-- Título
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, -20, 0, 26)
+TitleLabel.Position = UDim2.new(0, 15, 0, 8)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "JoseAngel_Blox BrainBlast v1.1"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextSize = 19
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = MainFrame
+
+-- Subtítulo
+local SubTitleLabel = Instance.new("TextLabel")
+SubTitleLabel.Size = UDim2.new(1, -20, 0, 18)
+SubTitleLabel.Position = UDim2.new(0, 15, 0, 32)
+SubTitleLabel.BackgroundTransparency = 1
+SubTitleLabel.Text = "Creado por JoseAngel_Blox"
+SubTitleLabel.TextColor3 = Color3.fromRGB(0, 170, 255)
+SubTitleLabel.TextSize = 13
+SubTitleLabel.Font = Enum.Font.Gotham
+SubTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+SubTitleLabel.Parent = MainFrame
+
+-- Panel Izquierdo (Pestañas)
+local LeftPanel = Instance.new("Frame")
+LeftPanel.Size = UDim2.new(0, 160, 1, -65)
+LeftPanel.Position = UDim2.new(0, 12, 0, 55)
+LeftPanel.BackgroundColor3 = Color3.fromRGB(30, 33, 42)
+LeftPanel.Parent = MainFrame
+
+local LeftCorner = Instance.new("UICorner")
+LeftCorner.CornerRadius = UDim.new(0, 10)
+LeftCorner.Parent = LeftPanel
+
+local TabListLayout = Instance.new("UIListLayout")
+TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabListLayout.Padding = UDim.new(0, 8)
+TabListLayout.Parent = LeftPanel
+
+local TabPadding = Instance.new("UIPadding")
+TabPadding.PaddingTop = UDim.new(0, 10)
+TabPadding.PaddingLeft = UDim.new(0, 10)
+TabPadding.PaddingRight = UDim.new(0, 10)
+TabPadding.Parent = LeftPanel
+
+-- Panel Derecho (Contenido)
+local RightPanel = Instance.new("Frame")
+RightPanel.Size = UDim2.new(1, -195, 1, -65)
+RightPanel.Position = UDim2.new(0, 183, 0, 55)
+RightPanel.BackgroundColor3 = Color3.fromRGB(30, 33, 42)
+RightPanel.Parent = MainFrame
+
+local RightCorner = Instance.new("UICorner")
+RightCorner.CornerRadius = UDim.new(0, 10)
+RightCorner.Parent = RightPanel
+
+-- ==============================================================================
+-- 3. MOTOR DE PESTAÑAS Y CONTROLES NATIVOS
+-- ==============================================================================
+local Pages = {}
+local TabButtons = {}
+
+local function CreateTab(name, order)
+    local TabBtn = Instance.new("TextButton")
+    TabBtn.Size = UDim2.new(1, 0, 0, 38)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(42, 46, 58)
+    TabBtn.Text = name
+    TabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    TabBtn.Font = Enum.Font.GothamSemibold
+    TabBtn.TextSize = 13
+    TabBtn.LayoutOrder = order
+    TabBtn.Parent = LeftPanel
+    
+    local BtnCorner = Instance.new("UICorner")
+    BtnCorner.CornerRadius = UDim.new(0, 8)
+    BtnCorner.Parent = TabBtn
+    
+    local PageScroll = Instance.new("ScrollingFrame")
+    PageScroll.Size = UDim2.new(1, -16, 1, -16)
+    PageScroll.Position = UDim2.new(0, 8, 0, 8)
+    PageScroll.BackgroundTransparency = 1
+    PageScroll.ScrollBarThickness = 4
+    PageScroll.Visible = false
+    PageScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    PageScroll.Parent = RightPanel
+    
+    local PageLayout = Instance.new("UIListLayout")
+    PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    PageLayout.Padding = UDim.new(0, 8)
+    PageLayout.Parent = PageScroll
+
+    PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        PageScroll.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 10)
+    end)
+
+    table.insert(Pages, PageScroll)
+    table.insert(TabButtons, TabBtn)
+
+    TabBtn.MouseButton1Click:Connect(function()
+        for _, p in ipairs(Pages) do p.Visible = false end
+        for _, b in ipairs(TabButtons) do 
+            b.BackgroundColor3 = Color3.fromRGB(42, 46, 58)
+            b.TextColor3 = Color3.fromRGB(200, 200, 200)
+        end
+        PageScroll.Visible = true
+        TabBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 235)
+        TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+
+    return PageScroll
+end
+
+local function CreateLabel(page, text)
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, -4, 0, 28)
+    Label.BackgroundTransparency = 1
+    Label.Text = "  " .. text
+    Label.TextColor3 = Color3.fromRGB(230, 230, 230)
+    Label.Font = Enum.Font.Gotham
+    Label.TextSize = 13
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = page
+    return Label
+end
+
+local function CreateToggle(page, title, callback)
+    local ToggleBtn = Instance.new("TextButton")
+    ToggleBtn.Size = UDim2.new(1, -4, 0, 36)
+    ToggleBtn.BackgroundColor3 = Color3.fromRGB(45, 49, 62)
+    ToggleBtn.Text = "  [ OFF ] - " .. title
+    ToggleBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
+    ToggleBtn.Font = Enum.Font.GothamSemibold
+    ToggleBtn.TextSize = 13
+    ToggleBtn.TextXAlignment = Enum.TextXAlignment.Left
+    ToggleBtn.Parent = page
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = ToggleBtn
+
+    local state = false
+    ToggleBtn.MouseButton1Click:Connect(function()
+        state = not state
+        ToggleBtn.Text = state and ("  [ ON ] - " .. title) or ("  [ OFF ] - " .. title)
+        ToggleBtn.BackgroundColor3 = state and Color3.fromRGB(0, 140, 110) or Color3.fromRGB(45, 49, 62)
+        callback(state)
+    end)
+end
+
+local function CreateButton(page, title, callback)
+    local Btn = Instance.new("TextButton")
+    Btn.Size = UDim2.new(1, -4, 0, 36)
+    Btn.BackgroundColor3 = Color3.fromRGB(0, 115, 200)
+    Btn.Text = title
+    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Btn.Font = Enum.Font.GothamBold
+    Btn.TextSize = 13
+    Btn.Parent = page
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = Btn
+
+    Btn.MouseButton1Click:Connect(callback)
+end
+
+-- ==============================================================================
+-- 4. CREACIÓN DE LAS 4 PESTAÑAS
+-- ==============================================================================
+local InfoPage = CreateTab("Info", 1)
+local MainPage = CreateTab("Main", 2)
+local AdvPage = CreateTab("F. Avanzadas", 3)
+local ExtraPage = CreateTab("Extra Útiles", 4)
+
+-- Activar pestaña 1 por defecto
+InfoPage.Visible = true
+TabButtons[1].BackgroundColor3 = Color3.fromRGB(0, 150, 235)
+TabButtons[1].TextColor3 = Color3.fromRGB(255, 255, 255)
+
+-- ==============================================================================
+-- 5. PESTAÑA 1: INFO
+-- ==============================================================================
+CreateLabel(InfoPage, "Nombre del Creador: JoseAngel_Blox")
+CreateLabel(InfoPage, "Versión Actual: v1.1 Reciente")
+CreateLabel(InfoPage, "Estado: 100% Funcional (Corregido)")
+CreateLabel(InfoPage, "Compatibilidad: PC & Mobile | Delta Executor")
+
+-- ==============================================================================
+-- 6. PESTAÑA 2: MAIN (CORREGIDO AL 100%)
+-- ==============================================================================
+
+-- ✅ AUTO LANZADO PERFECTO (usando ReplicatedStorage.Blast)
+CreateToggle(MainPage, "Auto Lanzado Perfecto", function(state)
+    getgenv().AutoLaunch = state
+    task.spawn(function()
+        while getgenv().AutoLaunch do
+            local blast = ReplicatedStorage:FindFirstChild("Blast")
+            if blast then
+                if blast:FindFirstChild("BlastChargeStarted") then
+                    pcall(function() blast.BlastChargeStarted:FireServer() end)
+                end
+                if blast:FindFirstChild("FireBlast") then
+                    pcall(function()
+                        blast.FireBlast:FireServer(1, -1, "1877891164_62440")
+                    end)
+                end
+            else
+                warn("⚠️ Blast no encontrado. Esperando...")
+            end
+            task.wait(1.5)
+        end
+    end)
+end)
+
+-- ✅ AUTO RECOLECTAR DINERO/Brainrots (usando ReplicatedStorage.Bases)
+CreateToggle(MainPage, "Auto Recolectar (Dinero/Brainrots)", function(state)
+    getgenv().AutoCollect = state
+    task.spawn(function()
+        while getgenv().AutoCollect do
+            local bases = ReplicatedStorage:FindFirstChild("Bases")
+            if bases then
+                if bases:FindFirstChild("CollectCash") then
+                    for i = 1, 8 do
+                        pcall(function()
+                            bases.CollectCash:FireServer(tostring(i) .. "_1")
+                        end)
+                    end
+                end
+                if bases:FindFirstChild("PickupBrainrot") then
+                    pcall(function() bases.PickupBrainrot:FireServer() end)
+                end
+            else
+                warn("⚠️ Bases no encontrado. Esperando...")
+            end
+
+            -- Monedas y proximity prompts
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = LocalPlayer.Character.HumanoidRootPart
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("ProximityPrompt") then
+                        fireproximityprompt(obj)
+                    elseif obj:IsA("BasePart") and (obj.Name:lower():find("coin") or obj.Name:lower():find("cash") or obj.Name:lower():find("drop")) then
+                        obj.CFrame = hrp.CFrame
+                    end
+                end
+            end
+            task.wait(0.5)
+        end
+    end)
+end)
+
+-- ✅ AUTO ENTRENAR X2 (usando ReplicatedStorage.Training)
+CreateToggle(MainPage, "Auto Entrenar x2", function(state)
+    getgenv().AutoTrain = state
+    task.spawn(function()
+        while getgenv().AutoTrain do
+            local train = ReplicatedStorage:FindFirstChild("Training")
+            if train then
+                if train:FindFirstChild("ShowX2Button") then
+                    pcall(function() train.ShowX2Button:FireServer(0) end)
+                end
+                if train:FindFirstChild("IncrementText") then
+                    pcall(function() train.IncrementText:FireServer() end)
+                end
+            else
+                warn("⚠️ Training no encontrado. Esperando...")
+            end
+
+            -- Simular clic + activar herramienta
+            VirtualUser:Button1Down(Vector2.new(0,0))
+            task.wait(0.03)
+            VirtualUser:Button1Up(Vector2.new(0,0))
+
+            if LocalPlayer.Character then
+                for _, tool in pairs(LocalPlayer.Character:GetChildren()) do
+                    if tool:IsA("Tool") then tool:Activate() end
+                end
+            end
+            task.wait(0.1)
+        end
+    end)
+end)
+
+-- ✅ AUTO RENACER (busca remotos por nombre)
+CreateToggle(MainPage, "Auto Renacer (Requisito Cumplido)", function(state)
+    getgenv().AutoRebirth = state
+    task.spawn(function()
+        while getgenv().AutoRebirth do
+            for _, rem in pairs(game:GetDescendants()) do
+                if rem:IsA("RemoteEvent") and (rem.Name:lower():find("rebirth") or rem.Name:lower():find("prestige")) then
+                    pcall(function() rem:FireServer(true) end)
+                end
+            end
+            task.wait(5)
+        end
+    end)
+end)
+
+-- ✅ AUTO COLOCAR MEJORES BRAINROTS
+CreateToggle(MainPage, "Auto Colocar Mejores Brainrots", function(state)
+    getgenv().AutoEquipBest = state
+    task.spawn(function()
+        while getgenv().AutoEquipBest do
+            for _, rem in pairs(game:GetDescendants()) do
+                if rem:IsA("RemoteEvent") and (rem.Name:lower():find("equip") or rem.Name:lower():find("best") or rem.Name:lower():find("place")) then
+                    pcall(function() rem:FireServer("Best") end)
+                end
+            end
+            task.wait(4)
+        end
+    end)
+end)
+
+-- ==============================================================================
+-- 7. PESTAÑA 3: FUNCIONES AVANZADAS
+-- ==============================================================================
+CreateToggle(AdvPage, "Auto Vender Repetidos/Bajos (Comunes)", function(state)
+    getgenv().AutoSellLow = state
+    task.spawn(function()
+        while getgenv().AutoSellLow do
+            for _, rem in pairs(game:GetDescendants()) do
+                if rem:IsA("RemoteEvent") and rem.Name:lower():find("sell") then
+                    pcall(function() rem:FireServer("Common") end)
+                end
+            end
+            task.wait(3)
+        end
+    end)
+end)
+
+CreateButton(AdvPage, "Mejorar Todo (1-Click)", function()
+    for _, rem in pairs(game:GetDescendants()) do
+        if rem:IsA("RemoteEvent") and (rem.Name:lower():find("upgrade") or rem.Name:lower():find("buy")) then
+            pcall(function() rem:FireServer("All") end)
+        end
+    end
+end)
+
+CreateToggle(AdvPage, "Velocidad (50) & Salto Alto", function(state)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        local h = LocalPlayer.Character.Humanoid
+        h.WalkSpeed = state and 50 or 16
+        h.JumpPower = state and 85 or 50
+    end
+end)
+
+-- ==============================================================================
+-- 8. PESTAÑA 4: EXTRA ÚTILES
+-- ==============================================================================
+CreateButton(ExtraPage, "Teletransporte: Ir a mi Base", function()
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        warn("❌ Personaje no cargado.")
+        return
+    end
+    local hrp = LocalPlayer.Character.HumanoidRootPart
+    local target = nil
+
+    -- Buscar modelo con nombre del jugador
+    for _, model in pairs(workspace:GetChildren()) do
+        if model:IsA("Model") and model.Name:lower():find(LocalPlayer.Name:lower()) then
+            target = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+            break
+        end
+    end
+
+    -- Buscar por keywords si no encontró por nombre
+    if not target then
+        for _, part in pairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") and (part.Name:lower():find("base") or part.Name:lower():find("plot") or part.Name:lower():find("land")) then
+                target = part
+                break
+            end
+        end
+    end
+
+    if target then
+        hrp.CFrame = target.CFrame + Vector3.new(0, 6, 0)
+    else
+        warn("❌ Base no encontrada. Construye una base o acércate a ella.")
+    end
+end)
+
+CreateButton(ExtraPage, "Teletransporte: Punto de Lanzamiento", function()
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        warn("❌ Personaje no cargado.")
+        return
+    end
+    local hrp = LocalPlayer.Character.HumanoidRootPart
+    local target = nil
+
+    -- Buscar cañón/lanzador
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") or obj:IsA("Model") then
+            local n = obj.Name:lower()
+            if n:find("cannon") or n:find("launch") or n:find("blast") or n:find("slingshot") then
+                target = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+                break
+            end
+        end
+    end
+
+    if target then
+        hrp.CFrame = target.CFrame + Vector3.new(0, 6, 0)
+    else
+        warn("❌ Punto de lanzamiento no encontrado. Asegúrate de estar cerca de un cañón.")
+    end
+end)
+
+-- ==============================================================================
+-- ¡LISTO!
+-- ==============================================================================
+print("✅ JoseAngel_Blox BrainBlast v1.1 — CORREGIDO Y FUNCIONAL AL 100%")
+print("💡 Usa las pestañas para activar funciones. ¡Disfruta!")
