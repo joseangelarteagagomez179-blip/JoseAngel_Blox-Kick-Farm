@@ -1,8 +1,8 @@
 -- ==========================================
 -- Script: JoseAngel_Blox premium no key
 -- Creador: JoseAngel_Blox
--- Versión: 2.4.1 | Fecha: 02/08/2026
--- UPDATE: Auto Click x2 ajustado con tu lógica exacta
+-- Versión: 2.6 | Fecha: 02/08/2026
+-- UPDATE: Integrado Auto Train & x2 (Equipa pesas automáticamente + Auto Click Bonos)
 -- ==========================================
 
 local Players = game:GetService("Players")
@@ -11,7 +11,6 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -29,19 +28,79 @@ getgenv().AutoKick = false
 getgenv().AutoFarm = false
 getgenv().VelocidadFarm = 500
 getgenv().MultiplierX2 = false
-getgenv().AutoClickX2 = false
+getgenv().AutoTrainX2 = false
 getgenv().AutoCollectCash = false
 
 local lockedPlot = nil
+local trainTick = 0
+
+-- Lista de pesas válidas para el Auto Train
+local validWeights = {
+    ["Wooden Stick"] = true, ["Copper Plate"] = true, ["Stone Block"] = true,
+    ["Bone Barbell"] = true, ["Donut Barbell"] = true, ["Ice Barbell"] = true,
+    ["Iron Plate"] = true, ["Heaven Plate"] = true, ["Gold Barbell"] = true,
+    ["Golden Barbell"] = true, ["Giant Gold Star Barbell"] = true, ["Neon Pulse"] = true,
+    ["Mega Gold Barbell"] = true, ["Mega Golden Barbell"] = true, ["Emerald Barbell"] = true,
+    ["Planet Barbell"] = true
+}
 
 -- ==========================================
 -- 2. FUNCIONES DE AUTOCLICK Y AUTOCOLLECT
 -- ==========================================
 
--- A) AUTO CLICK X2 (Con tu estructura exacta optimizada)
-local function startAutoClickX2()
+-- A) AUTO TRAIN & X2 (Equipa pesa + Entrena + Clic a Bonos)
+local function startAutoTrainX2()
+    trainTick = trainTick + 1
+    local currentTick = trainTick
+
     task.spawn(function()
-        while getgenv().AutoClickX2 do
+        while getgenv().AutoTrainX2 and (currentTick == trainTick) do
+            -- 1. Auto Equipar y Entrenar con Pesa
+            pcall(function()
+                local char = LocalPlayer.Character
+                local hum = char and char:FindFirstChild("Humanoid")
+                local backpack = LocalPlayer:FindFirstChild("Backpack")
+                local currentTool = char and char:FindFirstChildOfClass("Tool")
+                local isHoldingValidWeight = currentTool and validWeights[currentTool.Name]
+
+                if not isHoldingValidWeight then
+                    if currentTool and hum then hum:UnequipTools() end
+                    
+                    local slot1 = PlayerGui:FindFirstChild("Backpack") and PlayerGui.Backpack:FindFirstChild("Bar") and PlayerGui.Backpack.Bar:FindFirstChild("Slot1")
+                    
+                    if slot1 and type(getconnections) == "function" then
+                        local targets = {slot1, slot1:FindFirstChild("ToolImage")}
+                        for _, t in pairs(targets) do
+                            if t then
+                                pcall(function() for _, c in pairs(getconnections(t.MouseButton1Down)) do c:Fire() end end)
+                                pcall(function() for _, c in pairs(getconnections(t.MouseButton1Click)) do c:Fire() end end)
+                                pcall(function() for _, c in pairs(getconnections(t.InputBegan)) do c:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.Begin}) end end)
+                            end
+                        end
+                        task.wait(0.1)
+                        
+                        if not char:FindFirstChildOfClass("Tool") and backpack and hum then
+                            for _, tool in pairs(backpack:GetChildren()) do
+                                if tool:IsA("Tool") and validWeights[tool.Name] then
+                                    hum:EquipTool(tool)
+                                    break
+                                end
+                            end
+                        end
+                    else
+                        if currentTool then currentTool:Activate() end
+                    end
+                else
+                    if currentTool then
+                        currentTool:Activate()
+                        if type(getconnections) == "function" then
+                            for _, c in pairs(getconnections(currentTool.Activated)) do c:Fire() end
+                        end
+                    end
+                end
+            end)
+
+            -- 2. Auto-click para los bonos de KickUpgrades
             pcall(function()
                 local kickUpgrades = PlayerGui:FindFirstChild("KickUpgrades")
                 if kickUpgrades then
@@ -55,30 +114,21 @@ local function startAutoClickX2()
                                     local imgLabel = bonus:FindFirstChild("ImageLabel")
                                     if imgLabel then table.insert(targets, imgLabel) end
                                     
-                                    if getconnections then
+                                    if type(getconnections) == "function" then
                                         for _, target in pairs(targets) do
                                             pcall(function() for _, conn in pairs(getconnections(target.MouseButton1Click)) do conn:Fire() end end)
                                             pcall(function() for _, conn in pairs(getconnections(target.InputBegan)) do conn:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.Begin}) end end)
                                         end
-                                    else
-                                        -- Fallback si el ejecutor no soporta getconnections
-                                        for _, target in pairs(targets) do
-                                            pcall(function()
-                                                local pos = target.AbsolutePosition + (target.AbsoluteSize / 2)
-                                                VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y, 0, true, game, 1)
-                                                task.wait(0.05)
-                                                VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y, 0, false, game, 1)
-                                            end)
-                                        end
                                     end
                                 end)
-                            elseif not bonus.Visible then
+                            else
                                 bonus:SetAttribute("AutoClicked", nil)
                             end
                         end
                     end
                 end
             end)
+            
             task.wait(0.1)
         end
     end)
@@ -316,7 +366,7 @@ InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 12
 InfoText.TextWrapped = true
 InfoText.ZIndex = 4
-InfoText.Text = "Creador: JoseAngel_Blox\n\nVersión: 2.4.1\n\nAuto Click x2 sincronizado con tu bloque personalizado."
+InfoText.Text = "Creador: JoseAngel_Blox\n\nVersión: 2.6\n\nUPDATE: Sistema integrado de 'Auto Train & x2' que equipa automáticamente pesas válidas y recoge bonos."
 InfoText.Parent = InfoPage
 
 -- Generador de Toggles
@@ -380,7 +430,10 @@ local function createToggle(name, posY, callback)
     return container
 end
 
--- Toggles en Main
+-- ==========================================
+-- 4. REGISTRO DE TOGGLES EN MAIN
+-- ==========================================
+
 createToggle("Auto Kick", 0, function(state)
     getgenv().AutoKick = state
     if state then
@@ -436,10 +489,11 @@ createToggle("Multiplier x2", 88, function(state)
     end
 end)
 
-createToggle("Auto Click x2 (Bonuses)", 132, function(state)
-    getgenv().AutoClickX2 = state
+-- NUEVO BOTÓN TODO EN UNO: Equipa Pesa + Entrena + Clic a Bonos
+createToggle("Auto Train & x2 (Pesas + Bonos)", 132, function(state)
+    getgenv().AutoTrainX2 = state
     if state then
-        startAutoClickX2()
+        startAutoTrainX2()
     end
 end)
 
@@ -450,4 +504,4 @@ createToggle("Auto Collect Cash", 176, function(state)
     end
 end)
 
-print("[JoseAngel_Blox] v2.4.1 Cargado con éxito.")
+print("[JoseAngel_Blox] v2.6 Cargado con éxito.")
