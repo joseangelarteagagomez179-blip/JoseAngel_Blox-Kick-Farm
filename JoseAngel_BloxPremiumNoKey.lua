@@ -1,6 +1,6 @@
 -- ==========================================
 -- Script: JoseAngel_Blox premium no key
--- Versión: 6.0 (Con Auto Train + x2 de FARTEZ HUB)
+-- Versión: 3.2 Delta Lite (Con Auto Train)
 -- ==========================================
 
 local Players = game:GetService("Players")
@@ -8,54 +8,93 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
-local VirtualUser = game:GetService("VirtualUser")
 
-local player = Players.LocalPlayer
-local PlayerGui = player:WaitForChild("PlayerGui")
+local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
--- ANTI-AFK
--- ==========================================
-player.Idled:Connect(function()
-    pcall(function()
-        VirtualUser:CaptureController()
-        VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-        task.wait(1)
-        VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-    end)
-    print("🛡️ Anti-AFK activado")
-end)
-
--- ==========================================
--- CACHÉ DE REMOTOS
+-- 1. CACHÉ DE REMOTOS
 -- ==========================================
 local Network = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
 local KickEvent = Network:WaitForChild("rev_KickEvent")
 local MultiplierEvent = Network:WaitForChild("rev_TaviMishkal")
 local kickArgs = {1, 1}
 
--- ==========================================
--- FUNCIONES AUXILIARES
--- ==========================================
+-- Variables globales
+getgenv().AutoKick = false
+getgenv().AutoFarm = false
+getgenv().VelocidadFarm = 500
+getgenv().MultiplierX2 = false
+getgenv().AutoClickX2 = false
+getgenv().IntervaloX2 = 1
+getgenv().AutoCollectCash = false
+getgenv().AutoTrain = false -- NUEVO: Variable para Auto Train
 
--- Teletransporte forzado
+-- ==========================================
+-- 2. AUTO CLICK X2 (VERSIÓN ULTRA COMPATIBLE)
+-- ==========================================
+local function reclamarBotonesX2Delta()
+    pcall(function()
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if not playerGui then return end
+        
+        local kickUpgrades = playerGui:FindFirstChild("KickUpgrades")
+        if not kickUpgrades then return end
+        
+        for _, bonus in pairs(kickUpgrades:GetChildren()) do
+            if (bonus.Name == "Bonus" or bonus.Name == "PopBonus") and bonus.Visible then
+                if bonus:GetAttribute("AutoClicked") then return end
+                bonus:SetAttribute("AutoClicked", true)
+                
+                task.spawn(function()
+                    task.wait(0.1)
+                    pcall(function()
+                        local detector = bonus:FindFirstChild("ClickDetector")
+                        if detector then fireclickdetector(detector) end
+                    end)
+                    pcall(function()
+                        if bonus.MouseButton1Click then bonus.MouseButton1Click:Fire() end
+                    end)
+                    pcall(function()
+                        if bonus.Activated then bonus.Activated:Fire() end
+                    end)
+                    pcall(function()
+                        if bonus.InputBegan then
+                            bonus.InputBegan:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.Begin})
+                            task.wait(0.05)
+                            if bonus.InputEnded then
+                                bonus.InputEnded:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.End})
+                            end
+                        end
+                    end)
+                    task.wait(0.3)
+                    pcall(function() bonus:SetAttribute("AutoClicked", nil) end)
+                end)
+            else
+                pcall(function()
+                    if bonus:GetAttribute("AutoClicked") then bonus:SetAttribute("AutoClicked", nil) end
+                end)
+            end
+        end
+    end)
+end
+
+-- ==========================================
+-- 3. AUTO COLLECT CASH
+-- ==========================================
+local lockedPlot = nil
+
 local function ForcedTP(targetCFrame)
-    local char = player.Character
+    local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if hrp then
-        hrp.Velocity = Vector3.new(0,0,0)
+        hrp.Velocity = Vector3.new(0, 0, 0)
         hrp.CFrame = targetCFrame
     end
 end
 
--- ==========================================
--- AUTO COLLECT CASH
--- ==========================================
-local lockedPlot = nil
-
 local function collectCash()
     if not lockedPlot then
-        local char = player.Character
+        local char = LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if hrp then
             local closestDist = math.huge
@@ -94,7 +133,10 @@ local function collectCash()
                         pcall(function()
                             ForcedTP(targetCFrame + Vector3.new(0, 1.5, 0))
                             task.wait(0.1)
-                            Network.rev_B_Collect:FireServer(i)
+                            -- Nota: Asegúrate de que "rev_B_Collect" sea el nombre correcto del remoto en el juego
+                            if Network:FindFirstChild("rev_B_Collect") then
+                                Network.rev_B_Collect:FireServer(i)
+                            end
                         end)
                     end
                 end
@@ -104,40 +146,14 @@ local function collectCash()
 end
 
 -- ==========================================
--- VARIABLES GLOBALES
+-- 4. CREACIÓN DE LA GUI
 -- ==========================================
-getgenv().AutoKick = false
-getgenv().AutoFarm = false
-getgenv().VelocidadFarm = 500
-getgenv().MultiplierX2 = false
-getgenv().AutoCollectCash = false
-
--- Variables para Auto Train + x2 (de FARTEZ HUB)
-local autoTrain = false
-local trainTick = 0
-
--- Lista de pesas válidas (de FARTEZ HUB)
-local validWeights = {
-    ["Wooden Stick"] = true, ["Copper Plate"] = true, ["Stone Block"] = true,
-    ["Bone Barbell"] = true, ["Donut Barbell"] = true, ["Ice Barbell"] = true,
-    ["Iron Plate"] = true, ["Heaven Plate"] = true, ["Gold Barbell"] = true,
-    ["Golden Barbell"] = true, ["Giant Gold Star Barbell"] = true, ["Neon Pulse"] = true,
-    ["Mega Gold Barbell"] = true, ["Mega Golden Barbell"] = true, ["Emerald Barbell"] = true,
-    ["Planet Barbell"] = true
-}
-
--- ==========================================
--- CREACIÓN DE LA GUI
--- ==========================================
-
--- Limpiar GUI anterior
 if CoreGui:FindFirstChild("JoseAngel_Blox_GUI") then
     CoreGui.JoseAngel_Blox_GUI:Destroy()
 end
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "JoseAngel_Blox_GUI"
-ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = CoreGui
 
 local MainFrame = Instance.new("Frame")
@@ -148,25 +164,16 @@ MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 14)
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 14)
-MainCorner.Parent = MainFrame
-
--- Fondo
 local BackgroundImage = Instance.new("ImageLabel")
 BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
-BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
 BackgroundImage.BackgroundTransparency = 1
 BackgroundImage.Image = "rbxthumb://type=Asset&id=130801971957660&w=720&h=720"
 BackgroundImage.ScaleType = Enum.ScaleType.Crop
-BackgroundImage.ImageTransparency = 0
 BackgroundImage.ZIndex = 1
 BackgroundImage.Parent = MainFrame
-
-local BgCorner = Instance.new("UICorner")
-BgCorner.CornerRadius = UDim.new(0, 14)
-BgCorner.Parent = BackgroundImage
+Instance.new("UICorner", BackgroundImage).CornerRadius = UDim.new(0, 14)
 
 local DarkOverlay = Instance.new("Frame")
 DarkOverlay.Size = UDim2.new(1, 0, 1, 0)
@@ -174,12 +181,8 @@ DarkOverlay.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
 DarkOverlay.BackgroundTransparency = 0.45
 DarkOverlay.ZIndex = 2
 DarkOverlay.Parent = MainFrame
+Instance.new("UICorner", DarkOverlay).CornerRadius = UDim.new(0, 14)
 
-local OverlayCorner = Instance.new("UICorner")
-OverlayCorner.CornerRadius = UDim.new(0, 14)
-OverlayCorner.Parent = DarkOverlay
-
--- Cabecera
 local HeaderFrame = Instance.new("Frame")
 HeaderFrame.Size = UDim2.new(1, 0, 0, 50)
 HeaderFrame.BackgroundTransparency = 1
@@ -225,7 +228,6 @@ SubTitleLabel.TextSize = 12
 SubTitleLabel.ZIndex = 3
 SubTitleLabel.Parent = HeaderFrame
 
--- Pestañas
 local TabContainer = Instance.new("Frame")
 TabContainer.Size = UDim2.new(0, 110, 1, -60)
 TabContainer.Position = UDim2.new(0, 10, 0, 55)
@@ -259,7 +261,7 @@ MainPage.Position = UDim2.new(0, 8, 0, 8)
 MainPage.BackgroundTransparency = 1
 MainPage.Visible = false
 MainPage.ScrollBarThickness = 3
-MainPage.CanvasSize = UDim2.new(0, 0, 0, 420)
+MainPage.CanvasSize = UDim2.new(0, 0, 0, 400) -- Aumentado para que quepa el nuevo botón
 MainPage.ZIndex = 4
 MainPage.Parent = ContentContainer
 
@@ -294,7 +296,6 @@ MainBtn.Parent = TabContainer
 Instance.new("UICorner", MainBtn).CornerRadius = UDim.new(0, 8)
 MainBtn.MouseButton1Click:Connect(function() switchTab("Main") end)
 
--- Info
 local InfoText = Instance.new("TextLabel")
 InfoText.Size = UDim2.new(1, 0, 1, 0)
 InfoText.BackgroundTransparency = 1
@@ -307,18 +308,19 @@ InfoText.TextWrapped = true
 InfoText.ZIndex = 4
 InfoText.Text = "Nombre del Creador: JoseAngel_Blox\n\n" ..
                 "Fecha de lanzamiento: 02/08/2026\n\n" ..
-                "Versión: 6.0\n\n" ..
+                "Versión: 3.2 Delta Lite\n\n" ..
                 "Características:\n" ..
                 "✅ Auto Kick\n" ..
                 "✅ Auto Farm (Safe Zone)\n" ..
                 "✅ Multiplier x2\n" ..
+                "✅ Auto Click x2 (Bonuses)\n" ..
                 "✅ Auto Collect Cash\n" ..
-                "✅ Auto Train & x2 (FARTEZ HUB style)\n\n" ..
+                "✅ Auto Train & x2 (NUEVO)\n\n" ..
                 "Ejecutor: Delta Executor"
 InfoText.Parent = InfoPage
 
 -- ==========================================
--- GENERADOR DE TOGGLES
+-- 5. GENERADOR DE TOGGLES
 -- ==========================================
 local function createToggle(name, posY, callback)
     local container = Instance.new("TextButton")
@@ -376,15 +378,13 @@ local function createToggle(name, posY, callback)
         end
         callback(state)
     end)
-    
     return container
 end
 
 -- ==========================================
--- TOGGLES Y SELECTORES
+-- 6. TOGGLES Y SELECTORES
 -- ==========================================
 
--- 1) Auto Kick
 createToggle("Auto Kick", 0, function(state)
     getgenv().AutoKick = state
     if state then
@@ -397,7 +397,6 @@ createToggle("Auto Kick", 0, function(state)
     end
 end)
 
--- 2) Auto Farm (Safe Zone)
 createToggle("Auto Farm (Safe Zone)", 44, function(state)
     getgenv().AutoFarm = state
     if state then
@@ -405,7 +404,7 @@ createToggle("Auto Farm (Safe Zone)", 44, function(state)
             while getgenv().AutoFarm do
                 pcall(function()
                     KickEvent:FireServer(unpack(kickArgs))
-                    local char = player.Character
+                    local char = LocalPlayer.Character
                     if char and char:FindFirstChild("Humanoid") then
                         char.Humanoid.WalkSpeed = getgenv().VelocidadFarm
                         local areas = Workspace:FindFirstChild("Areas")
@@ -417,9 +416,7 @@ createToggle("Auto Farm (Safe Zone)", 44, function(state)
                                 char.Humanoid:MoveTo(safeZone.PrimaryPart.Position)
                             else
                                 local parte = safeZone:FindFirstChildWhichIsA("BasePart", true)
-                                if parte then
-                                    char.Humanoid:MoveTo(parte.Position)
-                                end
+                                if parte then char.Humanoid:MoveTo(parte.Position) end
                             end
                         end
                     end
@@ -428,13 +425,12 @@ createToggle("Auto Farm (Safe Zone)", 44, function(state)
             end
         end)
     else
-        if player.Character and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid.WalkSpeed = 16
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = 16
         end
     end
 end)
 
--- 3) Multiplier x2
 createToggle("Multiplier x2", 88, function(state)
     getgenv().MultiplierX2 = state
     if state then
@@ -447,8 +443,19 @@ createToggle("Multiplier x2", 88, function(state)
     end
 end)
 
--- 4) Auto Collect Cash
-createToggle("Auto Collect Cash 💰", 132, function(state)
+createToggle("Auto Click x2 (Bonuses)", 132, function(state)
+    getgenv().AutoClickX2 = state
+    if state then
+        task.spawn(function()
+            while getgenv().AutoClickX2 do
+                reclamarBotonesX2Delta()
+                task.wait(math.min(getgenv().IntervaloX2, 0.5))
+            end
+        end)
+    end
+end)
+
+createToggle("Auto Collect Cash 💰", 176, function(state)
     getgenv().AutoCollectCash = state
     if state then
         task.spawn(function()
@@ -463,30 +470,33 @@ createToggle("Auto Collect Cash 💰", 132, function(state)
 end)
 
 -- ==========================================
--- 5) AUTO TRAIN & X2 (DE FARTEZ HUB)
+-- 7. AUTO TRAIN (INTEGRADO A TU UI)
 -- ==========================================
-createToggle("Auto Train & x2 💪", 176, function(v)
-    autoTrain = v
-    trainTick = trainTick + 1
-    local currentTick = trainTick
-    
-    if autoTrain then
+local validWeights = {
+    ["Wooden Stick"] = true, ["Copper Plate"] = true, ["Stone Block"] = true,
+    ["Bone Barbell"] = true, ["Donut Barbell"] = true, ["Ice Barbell"] = true,
+    ["Iron Plate"] = true, ["Heaven Plate"] = true, ["Gold Barbell"] = true,
+    ["Golden Barbell"] = true, ["Giant Gold Star Barbell"] = true, ["Neon Pulse"] = true,
+    ["Mega Gold Barbell"] = true, ["Mega Golden Barbell"] = true, ["Emerald Barbell"] = true,
+    ["Planet Barbell"] = true
+}
+
+createToggle("Auto Train & x2 🏋️", 220, function(state)
+    getgenv().AutoTrain = state
+    if state then
         task.spawn(function()
-            while autoTrain and (currentTick == trainTick) do
+            while getgenv().AutoTrain do
                 pcall(function()
-                    local char = player.Character
+                    local char = LocalPlayer.Character
                     local hum = char and char:FindFirstChild("Humanoid")
-                    local backpack = player:FindFirstChild("Backpack")
+                    local backpack = LocalPlayer:FindFirstChild("Backpack")
                     local currentTool = char and char:FindFirstChildOfClass("Tool")
                     
-                    -- 1. Lógica para equipar la pesa correcta
                     local isHoldingValidWeight = currentTool and validWeights[currentTool.Name]
                     
                     if not isHoldingValidWeight then
                         if currentTool then hum:UnequipTools() end
                         task.wait(0.1)
-                        
-                        -- Intento directo y más fiable: buscar en la mochila y equipar
                         if backpack and hum then
                             for _, tool in pairs(backpack:GetChildren()) do
                                 if tool:IsA("Tool") and validWeights[tool.Name] then
@@ -496,33 +506,19 @@ createToggle("Auto Train & x2 💪", 176, function(v)
                             end
                         end
                     else
-                        -- 2. Lógica para activar la pesa (Entrenar)
                         if currentTool then
-                            currentTool:Activate() -- Método nativo de Roblox
-                            -- Fallback con getconnections solo si está disponible
-                            if getconnections and currentTool.Activated then
-                                for _, c in pairs(getconnections(currentTool.Activated)) do 
-                                    pcall(function() c:Fire() end) 
-                                end
-                            end
+                            currentTool:Activate()
                         end
                     end
                 end)
+                task.wait(0.15)
+            end
+        end)
+    end
+end)
 
-                -- 3. Lógica para reclamar bonos (KickUpgrades)
-                pcall(function()
-                    local kickUpgrades = PlayerGui:FindFirstChild("KickUpgrades")
-                    if kickUpgrades then
-                        for _, bonus in pairs(kickUpgrades:GetChildren()) do
-                            if bonus.Name == "Bonus" or bonus.Name == "PopBonus" then
-                                if bonus.Visible then
-                                    if not bonus:GetAttribute("AutoClicked") then
-                                        bonus:SetAttribute("AutoClicked", true)
-                                        task.spawn(function()
-                                            task.wait(0.15)
-                                            local targets = {bonus}
-                                            local imgLabel = bonus:FindFirstChild("ImageLabel")
-                                            if imgLabel then table.insert(targets, imgLabel) end
-                                            
-                                            for _, target in pairs(targets) do
-                                                -- Disparar ev
+-- ==========================================
+-- 8. SELECTORES (POSICIONES AJUSTADAS)
+-- ==========================================
+local opcionesVelocidad = {
+    {"Velocidad Farm: 
