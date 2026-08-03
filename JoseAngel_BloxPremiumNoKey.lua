@@ -1,6 +1,6 @@
 -- ==========================================
 -- Script: JoseAngel_Blox premium no key
--- Versión: Delta Executor Compatible (v4.0)
+-- Versión: Delta Executor Compatible (v1.1)
 -- ==========================================
 
 local Players = game:GetService("Players")
@@ -98,7 +98,7 @@ local function collectCash()
 end
 
 -- ==========================================
--- 3. CREACIÓN DE LA GUI
+-- 3. CREACIÓN DE LA GUI Y BOTÓN FLOTANTE
 -- ==========================================
 if CoreGui:FindFirstChild("JoseAngel_Blox_GUI") then
     CoreGui.JoseAngel_Blox_GUI:Destroy()
@@ -108,6 +108,28 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "JoseAngel_Blox_GUI"
 ScreenGui.Parent = CoreGui
 
+-- Botón Flotante para Abrir / Cerrar menú (Draggable en móvil)
+local ToggleMenuBtn = Instance.new("TextButton")
+ToggleMenuBtn.Name = "ToggleMenuBtn"
+ToggleMenuBtn.Size = UDim2.new(0, 48, 0, 48)
+ToggleMenuBtn.Position = UDim2.new(0, 15, 0, 85)
+ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+ToggleMenuBtn.Text = "JB"
+ToggleMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleMenuBtn.Font = Enum.Font.GothamBold
+ToggleMenuBtn.TextSize = 16
+ToggleMenuBtn.Active = true
+ToggleMenuBtn.Draggable = true
+ToggleMenuBtn.ZIndex = 15
+ToggleMenuBtn.Parent = ScreenGui
+
+Instance.new("UICorner", ToggleMenuBtn).CornerRadius = UDim.new(1, 0)
+local BtnStroke = Instance.new("UIStroke")
+BtnStroke.Color = Color3.fromRGB(45, 200, 75)
+BtnStroke.Thickness = 2.5
+BtnStroke.Parent = ToggleMenuBtn
+
+-- Marco Principal
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 430, 0, 320)
 MainFrame.Position = UDim2.new(0.5, -215, 0.5, -160)
@@ -120,6 +142,16 @@ MainFrame.Parent = ScreenGui
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = MainFrame
+
+-- Funcionalidad del Botón Flotante
+ToggleMenuBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+    if MainFrame.Visible then
+        BtnStroke.Color = Color3.fromRGB(45, 200, 75) -- Verde cuando está abierto
+    else
+        BtnStroke.Color = Color3.fromRGB(190, 45, 45) -- Rojo cuando está cerrado
+    end
+end)
 
 -- Fondo
 local BackgroundImage = Instance.new("ImageLabel")
@@ -158,7 +190,7 @@ local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, 0, 0, 28)
 TitleLabel.Position = UDim2.new(0, 0, 0, 4)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "JoseAngel_Blox premium no key"
+TitleLabel.Text = "JoseAngel_Blox premium no key v1.1"
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextSize = 18
 TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -168,10 +200,11 @@ TitleLabel.Parent = HeaderFrame
 local TitleGradient = Instance.new("UIGradient")
 TitleGradient.Parent = TitleLabel
 
+-- Arcoíris fluido y rápido
 task.spawn(function()
     local offsetHue = 0
     while task.wait() do
-        offsetHue = (offsetHue + 0.006) % 1
+        offsetHue = (offsetHue + 0.020) % 1
         local keypoints = {}
         for i = 0, 10 do
             local time = i / 10
@@ -301,7 +334,7 @@ InfoText.TextWrapped = true
 InfoText.ZIndex = 4
 InfoText.Text = "Nombre del Creador: JoseAngel_Blox\n\n" ..
                 "Fecha de lanzamiento: 02/08/2026\n\n" ..
-                "Versión: 4.0 (Delta Compatible)\n\n" ..
+                "Versión: 1.1 (Delta Compatible)\n\n" ..
                 "Características:\n" ..
                 "- Auto Kick\n" ..
                 "- Auto Farm (Safe Zone)\n" ..
