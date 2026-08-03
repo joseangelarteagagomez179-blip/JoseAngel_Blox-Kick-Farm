@@ -1,8 +1,8 @@
 -- ==========================================
 -- Script: JoseAngel_Blox premium no key
 -- Creador: JoseAngel_Blox
--- Versión: 2.6 | Fecha: 02/08/2026
--- UPDATE: Integrado Auto Train & x2 (Equipa pesas automáticamente + Auto Click Bonos)
+-- Versión: 2.7 | Fecha: 02/08/2026
+-- UPDATE: Fix de resolución (700x700) + VirtualInputManager (Simulación táctil para Delta)
 -- ==========================================
 
 local Players = game:GetService("Players")
@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -28,6 +29,7 @@ getgenv().AutoKick = false
 getgenv().AutoFarm = false
 getgenv().VelocidadFarm = 500
 getgenv().MultiplierX2 = false
+getgenv().AutoClickX2 = false
 getgenv().AutoTrainX2 = false
 getgenv().AutoCollectCash = false
 
@@ -48,7 +50,72 @@ local validWeights = {
 -- 2. FUNCIONES DE AUTOCLICK Y AUTOCOLLECT
 -- ==========================================
 
--- A) AUTO TRAIN & X2 (Equipa pesa + Entrena + Clic a Bonos)
+-- Clic Universal (VirtualInputManager + getconnections para Móvil/Delta)
+local function ForzarClicUI(target)
+    if not target or not target:IsA("GuiObject") or not target.Visible then return end
+
+    -- 1. Simular Toque Táctil Real en las coordenadas de la pantalla (100% compatible con Delta)
+    pcall(function()
+        local pos = target.AbsolutePosition
+        local size = target.AbsoluteSize
+        local centerX = pos.X + (size.X / 2)
+        local centerY = pos.Y + (size.Y / 2)
+
+        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 1)
+        task.wait(0.02)
+        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 1)
+    end)
+
+    -- 2. Disparar conexiones internas por si el juego usa señales directas
+    if type(getconnections) == "function" then
+        local eventos = {"Activated", "MouseButton1Click", "MouseButton1Down", "TouchTap"}
+        for _, ev in pairs(eventos) do
+            pcall(function()
+                if target[ev] then
+                    for _, conn in pairs(getconnections(target[ev])) do
+                        conn:Fire()
+                    end
+                end
+            end)
+        end
+        pcall(function()
+            if target.InputBegan then
+                for _, conn in pairs(getconnections(target.InputBegan)) do
+                    conn:Fire({UserInputType = Enum.UserInputType.Touch, UserInputState = Enum.UserInputState.Begin})
+                    conn:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.Begin})
+                end
+            end
+        end)
+    end
+end
+
+local function procesarBonos()
+    local kickUpgrades = PlayerGui:FindFirstChild("KickUpgrades")
+    if kickUpgrades then
+        for _, bonus in pairs(kickUpgrades:GetChildren()) do
+            if (bonus.Name == "Bonus" or bonus.Name == "PopBonus") and bonus:IsA("GuiObject") and bonus.Visible then
+                ForzarClicUI(bonus)
+                for _, desc in pairs(bonus:GetDescendants()) do
+                    if desc:IsA("GuiObject") and desc.Visible then
+                        ForzarClicUI(desc)
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- A) AUTO CLICK X2 SOLO BONOS
+local function startAutoClickX2()
+    task.spawn(function()
+        while getgenv().AutoClickX2 do
+            pcall(procesarBonos)
+            task.wait(0.25)
+        end
+    end)
+end
+
+-- B) AUTO TRAIN & X2 (Equipa pesa + Entrena + Clic a Bonos)
 local function startAutoTrainX2()
     trainTick = trainTick + 1
     local currentTick = trainTick
@@ -67,28 +134,16 @@ local function startAutoTrainX2()
                     if currentTool and hum then hum:UnequipTools() end
                     
                     local slot1 = PlayerGui:FindFirstChild("Backpack") and PlayerGui.Backpack:FindFirstChild("Bar") and PlayerGui.Backpack.Bar:FindFirstChild("Slot1")
+                    if slot1 then ForzarClicUI(slot1) end
+                    task.wait(0.1)
                     
-                    if slot1 and type(getconnections) == "function" then
-                        local targets = {slot1, slot1:FindFirstChild("ToolImage")}
-                        for _, t in pairs(targets) do
-                            if t then
-                                pcall(function() for _, c in pairs(getconnections(t.MouseButton1Down)) do c:Fire() end end)
-                                pcall(function() for _, c in pairs(getconnections(t.MouseButton1Click)) do c:Fire() end end)
-                                pcall(function() for _, c in pairs(getconnections(t.InputBegan)) do c:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.Begin}) end end)
+                    if not char:FindFirstChildOfClass("Tool") and backpack and hum then
+                        for _, tool in pairs(backpack:GetChildren()) do
+                            if tool:IsA("Tool") and validWeights[tool.Name] then
+                                hum:EquipTool(tool)
+                                break
                             end
                         end
-                        task.wait(0.1)
-                        
-                        if not char:FindFirstChildOfClass("Tool") and backpack and hum then
-                            for _, tool in pairs(backpack:GetChildren()) do
-                                if tool:IsA("Tool") and validWeights[tool.Name] then
-                                    hum:EquipTool(tool)
-                                    break
-                                end
-                            end
-                        end
-                    else
-                        if currentTool then currentTool:Activate() end
                     end
                 else
                     if currentTool then
@@ -101,40 +156,14 @@ local function startAutoTrainX2()
             end)
 
             -- 2. Auto-click para los bonos de KickUpgrades
-            pcall(function()
-                local kickUpgrades = PlayerGui:FindFirstChild("KickUpgrades")
-                if kickUpgrades then
-                    for _, bonus in pairs(kickUpgrades:GetChildren()) do
-                        if bonus.Name == "Bonus" or bonus.Name == "PopBonus" then
-                            if bonus.Visible and not bonus:GetAttribute("AutoClicked") then
-                                bonus:SetAttribute("AutoClicked", true)
-                                task.spawn(function()
-                                    task.wait(0.2)
-                                    local targets = {bonus}
-                                    local imgLabel = bonus:FindFirstChild("ImageLabel")
-                                    if imgLabel then table.insert(targets, imgLabel) end
-                                    
-                                    if type(getconnections) == "function" then
-                                        for _, target in pairs(targets) do
-                                            pcall(function() for _, conn in pairs(getconnections(target.MouseButton1Click)) do conn:Fire() end end)
-                                            pcall(function() for _, conn in pairs(getconnections(target.InputBegan)) do conn:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.Begin}) end end)
-                                        end
-                                    end
-                                end)
-                            else
-                                bonus:SetAttribute("AutoClicked", nil)
-                            end
-                        end
-                    end
-                end
-            end)
+            pcall(procesarBonos)
             
-            task.wait(0.1)
+            task.wait(0.15)
         end
     end)
 end
 
--- B) AUTO COLLECT CASH
+-- C) AUTO COLLECT CASH
 local function ForcedTP(targetCFrame)
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -222,11 +251,11 @@ MainFrame.Parent = ScreenGui
 
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 14)
 
--- Imagen de fondo
+-- Imagen de fondo con resolución corregida (700x700 en lugar de 720x720)
 local BackgroundImage = Instance.new("ImageLabel")
 BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 BackgroundImage.BackgroundTransparency = 1
-BackgroundImage.Image = "rbxthumb://type=Asset&id=130801971957660&w=720&h=720"
+BackgroundImage.Image = "rbxthumb://type=Asset&id=130801971957660&w=700&h=700"
 BackgroundImage.ScaleType = Enum.ScaleType.Crop
 BackgroundImage.ZIndex = 1
 BackgroundImage.Parent = MainFrame
@@ -366,7 +395,7 @@ InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 12
 InfoText.TextWrapped = true
 InfoText.ZIndex = 4
-InfoText.Text = "Creador: JoseAngel_Blox\n\nVersión: 2.6\n\nUPDATE: Sistema integrado de 'Auto Train & x2' que equipa automáticamente pesas válidas y recoge bonos."
+InfoText.Text = "Creador: JoseAngel_Blox\n\nVersión: 2.7\n\nUPDATE: Corregido error de miniatura en consola y agregado soporte táctil (VirtualInputManager) para Delta."
 InfoText.Parent = InfoPage
 
 -- Generador de Toggles
@@ -489,19 +518,25 @@ createToggle("Multiplier x2", 88, function(state)
     end
 end)
 
--- NUEVO BOTÓN TODO EN UNO: Equipa Pesa + Entrena + Clic a Bonos
-createToggle("Auto Train & x2 (Pesas + Bonos)", 132, function(state)
+createToggle("Auto Click x2 (Bonos)", 132, function(state)
+    getgenv().AutoClickX2 = state
+    if state then
+        startAutoClickX2()
+    end
+end)
+
+createToggle("Auto Train & x2 (Pesas + Bonos)", 176, function(state)
     getgenv().AutoTrainX2 = state
     if state then
         startAutoTrainX2()
     end
 end)
 
-createToggle("Auto Collect Cash", 176, function(state)
+createToggle("Auto Collect Cash", 220, function(state)
     getgenv().AutoCollectCash = state
     if state then
         startAutoCollectCash()
     end
 end)
 
-print("[JoseAngel_Blox] v2.6 Cargado con éxito.")
+print("[JoseAngel_B
