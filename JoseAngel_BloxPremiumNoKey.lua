@@ -1,6 +1,7 @@
 -- ==========================================
 -- Script: JoseAngel_Blox premium no key
--- Versión: Delta Executor Compatible
+-- Versión: 3.0 Delta Optimizada
+-- Fecha: 02/08/2026
 -- ==========================================
 
 local Players = game:GetService("Players")
@@ -8,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -29,69 +31,83 @@ getgenv().IntervaloX2 = 1
 getgenv().AutoCollectCash = false
 
 -- ==========================================
--- 2. AUTO CLICK X2 (VERSIÓN DELTA COMPATIBLE)
+-- 2. AUTO CLICK X2 (VERSIÓN DELTA CON VIRTUALINPUTMANAGER)
 -- ==========================================
 local function reclamarBotonesX2Delta()
     pcall(function()
         local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
         if not playerGui then return end
         
-        local kickUpgrades = playerGui:FindFirstChild("KickUpgrades")
-        if not kickUpgrades then return end
-        
-        for _, bonus in pairs(kickUpgrades:GetChildren()) do
-            if (bonus.Name == "Bonus" or bonus.Name == "PopBonus") and bonus.Visible then
-                if bonus:GetAttribute("AutoClicked") then return end
-                bonus:SetAttribute("AutoClicked", true)
+        -- Busca en toda la interfaz
+        for _, gui in pairs(playerGui:GetDescendants()) do
+            if (gui:IsA("ImageButton") or gui:IsA("TextButton")) and gui.Visible then
+                local nombre = string.lower(gui.Name)
+                local texto = string.lower(gui.Text or "")
                 
-                task.spawn(function()
-                    task.wait(0.1)
-                    -- Método alternativo para Delta: fireclickdetector o simulación manual
+                -- Detecta botones x2 o bonus
+                if string.find(nombre, "bonus") or string.find(nombre, "popbonus") or 
+                   string.find(texto, "x2") or string.find(texto, "bonus") or
+                   string.find(nombre, "x2") then
+                    
+                    -- Evita spam
+                    if gui:GetAttribute("AutoClicked") then return end
+                    gui:SetAttribute("AutoClicked", true)
+                    
+                    task.spawn(function()
+                        task.wait(0.1)
+                        
+                        -- MÉTODO PRINCIPAL: VirtualInputManager (más fiable en Delta)
+                        pcall(function()
+                            local pos = gui.AbsolutePosition
+                            local size = gui.AbsoluteSize
+                            if pos.X > 0 and pos.Y > 0 and size.X > 0 and size.Y > 0 then
+                                local x = pos.X + size.X / 2
+                                local y = pos.Y + size.Y / 2
+                                VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 0)
+                                task.wait(0.05)
+                                VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 0)
+                            end
+                        end)
+                        
+                        -- MÉTODO 2: ClickDetector (respaldo)
+                        pcall(function()
+                            local detector = gui:FindFirstChild("ClickDetector")
+                            if detector then
+                                fireclickdetector(detector)
+                            end
+                        end)
+                        
+                        -- MÉTODO 3: Eventos directos (respaldo)
+                        pcall(function()
+                            if gui.MouseButton1Click then
+                                gui.MouseButton1Click:Fire()
+                            end
+                            if gui.Activated then
+                                gui.Activated:Fire()
+                            end
+                        end)
+                        
+                        -- Resetea el atributo después de un tiempo
+                        task.wait(0.5)
+                        pcall(function()
+                            gui:SetAttribute("AutoClicked", nil)
+                        end)
+                    end)
+                else
+                    -- Resetea el atributo si el botón ya no está visible
                     pcall(function()
-                        -- Intentar con fireclickdetector
-                        local detector = bonus:FindFirstChild("ClickDetector")
-                        if detector then
-                            fireclickdetector(detector)
+                        if gui:GetAttribute("AutoClicked") then
+                            gui:SetAttribute("AutoClicked", nil)
                         end
                     end)
-                    pcall(function()
-                        -- Intentar con MouseButton1Click
-                        if bonus.MouseButton1Click then
-                            bonus.MouseButton1Click:Fire()
-                        end
-                    end)
-                    pcall(function()
-                        -- Intentar con Activated
-                        if bonus.Activated then
-                            bonus.Activated:Fire()
-                        end
-                    end)
-                    -- Intentar con InputBegan (simulación manual)
-                    pcall(function()
-                        if bonus.InputBegan then
-                            bonus.InputBegan:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.Begin})
-                        end
-                    end)
-                    task.wait(0.05)
-                    pcall(function()
-                        if bonus.InputEnded then
-                            bonus.InputEnded:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.End})
-                        end
-                    end)
-                end)
-            else
-                pcall(function()
-                    if bonus:GetAttribute("AutoClicked") then
-                        bonus:SetAttribute("AutoClicked", nil)
-                    end
-                end)
+                end
             end
         end
     end)
 end
 
 -- ==========================================
--- 3. AUTO COLLECT CASH (VERSIÓN DELTA COMPATIBLE)
+-- 3. AUTO COLLECT CASH
 -- ==========================================
 local lockedPlot = nil
 
@@ -332,13 +348,13 @@ InfoText.TextWrapped = true
 InfoText.ZIndex = 4
 InfoText.Text = "Nombre del Creador: JoseAngel_Blox\n\n" ..
                 "Fecha de lanzamiento: 02/08/2026\n\n" ..
-                "Versión: 3.0 (Delta Compatible)\n\n" ..
+                "Versión: 3.0 Delta Optimizada\n\n" ..
                 "Características:\n" ..
-                "- Auto Kick\n" ..
-                "- Auto Farm (Safe Zone)\n" ..
-                "- Multiplier x2\n" ..
-                "- Auto Click x2 (Bonuses)\n" ..
-                "- Auto Collect Cash\n\n" ..
+                "✅ Auto Kick\n" ..
+                "✅ Auto Farm (Safe Zone)\n" ..
+                "✅ Multiplier x2\n" ..
+                "✅ Auto Click x2 (VirtualInputManager)\n" ..
+                "✅ Auto Collect Cash\n\n" ..
                 "Ejecutor: Delta Executor"
 InfoText.Parent = InfoPage
 
@@ -472,7 +488,7 @@ createToggle("Multiplier x2", 88, function(state)
     end
 end)
 
--- Auto Click x2 (Delta Compatible)
+-- Auto Click x2 (Delta Optimizado)
 createToggle("Auto Click x2 (Bonuses)", 132, function(state)
     getgenv().AutoClickX2 = state
     if state then
@@ -523,30 +539,4 @@ Instance.new("UICorner", SpeedSelectorBtn).CornerRadius = UDim.new(0, 8)
 
 SpeedSelectorBtn.MouseButton1Click:Connect(function()
     indiceVel = indiceVel + 1
-    if indiceVel > #opcionesVelocidad then
-        indiceVel = 1
-    end
-    getgenv().VelocidadFarm = opcionesVelocidad[indiceVel][2]
-    SpeedSelectorBtn.Text = "Auto Farm -> " .. opcionesVelocidad[indiceVel][1]
-end)
-
--- Selector Tiempo
-local opcionesTiempo = {
-    {"1 segundo", 1},
-    {"1 minuto", 60},
-    {"2 minutos", 120},
-    {"5 minutos", 300},
-    {"10 minutos", 600}
-}
-local indiceTiempo = 1
-
-local TimeSelectorBtn = Instance.new("TextButton")
-TimeSelectorBtn.Size = UDim2.new(1, 0, 0, 34)
-TimeSelectorBtn.Position = UDim2.new(0, 0, 0, 266)
-TimeSelectorBtn.BackgroundColor3 = Color3.fromRGB(40, 75, 110)
-TimeSelectorBtn.Text = "Tiempo Auto Click x2: 1 segundo"
-TimeSelectorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-TimeSelectorBtn.Font = Enum.Font.GothamBold
-TimeSelectorBtn.TextSize = 12
-TimeSelectorBtn.ZIndex = 4
-TimeSelectorBtn.Parent = MainPa
+    if in
