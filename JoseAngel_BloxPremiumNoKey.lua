@@ -1,6 +1,7 @@
 -- ==========================================
 -- Script: JoseAngel_Blox premium no key
--- Versión: 3.1 Delta Lite (100% compatible)
+-- Versión: 4.0 (Auto Train + x2 de FARTEZ HUB)
+-- Fecha: 02/08/2026
 -- ==========================================
 
 local Players = game:GetService("Players")
@@ -10,6 +11,7 @@ local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 -- ==========================================
 -- 1. CACHÉ DE REMOTOS
@@ -27,78 +29,107 @@ getgenv().MultiplierX2 = false
 getgenv().AutoClickX2 = false
 getgenv().IntervaloX2 = 1
 getgenv().AutoCollectCash = false
+getgenv().AutoTrainX2 = false
 
 -- ==========================================
--- 2. AUTO CLICK X2 (VERSIÓN ULTRA COMPATIBLE)
+-- 2. AUTO TRAIN + X2 (EXTRAÍDO DE FARTEZ HUB)
 -- ==========================================
-local function reclamarBotonesX2Delta()
+
+-- Lista de pesas válidas
+local validWeights = {
+    ["Wooden Stick"] = true,
+    ["Copper Plate"] = true,
+    ["Stone Block"] = true,
+    ["Bone Barbell"] = true,
+    ["Donut Barbell"] = true,
+    ["Ice Barbell"] = true,
+    ["Iron Plate"] = true,
+    ["Heaven Plate"] = true,
+    ["Gold Barbell"] = true,
+    ["Golden Barbell"] = true,
+    ["Giant Gold Star Barbell"] = true,
+    ["Neon Pulse"] = true,
+    ["Mega Gold Barbell"] = true,
+    ["Mega Golden Barbell"] = true,
+    ["Emerald Barbell"] = true,
+    ["Planet Barbell"] = true
+}
+
+-- Función Auto Train (extraída de FARTEZ HUB)
+local function AutoTrainYx2()
     pcall(function()
-        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-        if not playerGui then return end
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChild("Humanoid")
+        local backpack = LocalPlayer:FindFirstChild("Backpack")
+        local currentTool = char and char:FindFirstChildOfClass("Tool")
         
-        -- Busca específicamente KickUpgrades
-        local kickUpgrades = playerGui:FindFirstChild("KickUpgrades")
+        local isHoldingValidWeight = currentTool and validWeights[currentTool.Name]
+        
+        if not isHoldingValidWeight then
+            if currentTool then
+                hum:UnequipTools()
+            end
+            
+            if backpack and hum then
+                for _, tool in pairs(backpack:GetChildren()) do
+                    if tool:IsA("Tool") and validWeights[tool.Name] then
+                        hum:EquipTool(tool)
+                        break
+                    end
+                end
+            end
+        else
+            currentTool:Activate()
+        end
+    end)
+end
+
+-- Función Click x2 (extraída de FARTEZ HUB)
+local function ClickX2()
+    pcall(function()
+        local kickUpgrades = PlayerGui:FindFirstChild("KickUpgrades")
         if not kickUpgrades then return end
         
         for _, bonus in pairs(kickUpgrades:GetChildren()) do
-            if (bonus.Name == "Bonus" or bonus.Name == "PopBonus") and bonus.Visible then
-                if bonus:GetAttribute("AutoClicked") then return end
-                bonus:SetAttribute("AutoClicked", true)
-                
-                task.spawn(function()
-                    task.wait(0.1)
-                    
-                    -- MÉTODO 1: fireclickdetector (el más básico y compatible)
-                    pcall(function()
-                        local detector = bonus:FindFirstChild("ClickDetector")
-                        if detector then
-                            fireclickdetector(detector)
-                        end
-                    end)
-                    
-                    -- MÉTODO 2: Simulación con MouseButton1Click
-                    pcall(function()
-                        if bonus.MouseButton1Click then
-                            bonus.MouseButton1Click:Fire()
-                        end
-                    end)
-                    
-                    -- MÉTODO 3: Simulación con Activated
-                    pcall(function()
-                        if bonus.Activated then
-                            bonus.Activated:Fire()
-                        end
-                    end)
-                    
-                    -- MÉTODO 4: Simulación manual con InputBegan (sin VirtualInputManager)
-                    pcall(function()
-                        if bonus.InputBegan then
-                            bonus.InputBegan:Fire({
-                                UserInputType = Enum.UserInputType.MouseButton1,
-                                UserInputState = Enum.UserInputState.Begin
-                            })
-                            task.wait(0.05)
-                            if bonus.InputEnded then
-                                bonus.InputEnded:Fire({
-                                    UserInputType = Enum.UserInputType.MouseButton1,
-                                    UserInputState = Enum.UserInputState.End
-                                })
+            if (bonus.Name == "Bonus" or bonus.Name == "PopBonus") then
+                if bonus.Visible then
+                    if not bonus:GetAttribute("AutoClicked") then
+                        bonus:SetAttribute("AutoClicked", true)
+                        
+                        task.spawn(function()
+                            task.wait(0.2)
+                            
+                            local imgLabel = bonus:FindFirstChild("ImageLabel")
+                            local targets = {bonus}
+                            if imgLabel then table.insert(targets, imgLabel) end
+                            
+                            if getconnections then
+                                for _, target in pairs(targets) do
+                                    pcall(function()
+                                        for _, conn in pairs(getconnections(target.InputBegan)) do
+                                            conn:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.Begin})
+                                            conn:Fire({UserInputType = Enum.UserInputType.Touch, UserInputState = Enum.UserInputState.Begin})
+                                        end
+                                    end)
+                                    pcall(function()
+                                        for _, conn in pairs(getconnections(target.MouseButton1Down)) do conn:Fire() end
+                                    end)
+                                    pcall(function()
+                                        for _, conn in pairs(getconnections(target.MouseButton1Up)) do conn:Fire() end
+                                    end)
+                                    pcall(function()
+                                        for _, conn in pairs(getconnections(target.MouseButton1Click)) do conn:Fire() end
+                                    end)
+                                    pcall(function()
+                                        for _, conn in pairs(getconnections(target.Activated)) do conn:Fire() end
+                                    end)
+                                end
                             end
-                        end
-                    end)
-                    
-                    -- Resetea el atributo
-                    task.wait(0.3)
-                    pcall(function()
-                        bonus:SetAttribute("AutoClicked", nil)
-                    end)
-                end)
-            else
-                pcall(function()
-                    if bonus:GetAttribute("AutoClicked") then
-                        bonus:SetAttribute("AutoClicked", nil)
+                        end)
                     end
-                end)
+                else
+                    bonus:SetAttribute("AutoClicked", nil)
+                end
             end
         end
     end)
@@ -298,7 +329,7 @@ MainPage.Position = UDim2.new(0, 8, 0, 8)
 MainPage.BackgroundTransparency = 1
 MainPage.Visible = false
 MainPage.ScrollBarThickness = 3
-MainPage.CanvasSize = UDim2.new(0, 0, 0, 380)
+MainPage.CanvasSize = UDim2.new(0, 0, 0, 420) -- Aumentado para más toggles
 MainPage.ZIndex = 4
 MainPage.Parent = ContentContainer
 
@@ -346,13 +377,14 @@ InfoText.TextWrapped = true
 InfoText.ZIndex = 4
 InfoText.Text = "Nombre del Creador: JoseAngel_Blox\n\n" ..
                 "Fecha de lanzamiento: 02/08/2026\n\n" ..
-                "Versión: 3.1 Delta Lite\n\n" ..
+                "Versión: 4.0 (Auto Train + x2 de FARTEZ HUB)\n\n" ..
                 "Características:\n" ..
                 "✅ Auto Kick\n" ..
                 "✅ Auto Farm (Safe Zone)\n" ..
                 "✅ Multiplier x2\n" ..
-                "✅ Auto Click x2 (fireclickdetector)\n" ..
-                "✅ Auto Collect Cash\n\n" ..
+                "✅ Auto Click x2 (Bonus)\n" ..
+                "✅ Auto Collect Cash\n" ..
+                "✅ Auto Train + x2 (NUEVO)\n\n" ..
                 "Ejecutor: Delta Executor"
 InfoText.Parent = InfoPage
 
@@ -423,7 +455,7 @@ end
 -- 6. TOGGLES Y SELECTORES
 -- ==========================================
 
--- Auto Kick
+-- 1) Auto Kick
 createToggle("Auto Kick", 0, function(state)
     getgenv().AutoKick = state
     if state then
@@ -436,7 +468,7 @@ createToggle("Auto Kick", 0, function(state)
     end
 end)
 
--- Auto Farm
+-- 2) Auto Farm (Safe Zone)
 createToggle("Auto Farm (Safe Zone)", 44, function(state)
     getgenv().AutoFarm = state
     if state then
@@ -473,7 +505,7 @@ createToggle("Auto Farm (Safe Zone)", 44, function(state)
     end
 end)
 
--- Multiplier x2
+-- 3) Multiplier x2
 createToggle("Multiplier x2", 88, function(state)
     getgenv().MultiplierX2 = state
     if state then
@@ -486,72 +518,22 @@ createToggle("Multiplier x2", 88, function(state)
     end
 end)
 
--- Auto Click x2
+-- 4) Auto Click x2 (Bonuses) - AHORA USA LA FUNCIÓN DE FARTEZ HUB
 createToggle("Auto Click x2 (Bonuses)", 132, function(state)
     getgenv().AutoClickX2 = state
     if state then
         task.spawn(function()
             while getgenv().AutoClickX2 do
-                reclamarBotonesX2Delta()
+                ClickX2() -- Función extraída de FARTEZ HUB
                 task.wait(math.min(getgenv().IntervaloX2, 0.5))
             end
         end)
     end
 end)
 
--- Auto Collect Cash
+-- 5) Auto Collect Cash
 createToggle("Auto Collect Cash 💰", 176, function(state)
     getgenv().AutoCollectCash = state
     if state then
         task.spawn(function()
-            while getgenv().AutoCollectCash do
-                pcall(collectCash)
-                task.wait(1.5)
-            end
-        end)
-    else
-        lockedPlot = nil
-    end
-end)
-
--- Selector Velocidad
-local opcionesVelocidad = {
-    {"Velocidad Farm: 200", 200},
-    {"Velocidad Farm: 500", 500},
-    {"Velocidad Farm: 1000", 1000},
-    {"Velocidad Farm: 1500", 1500}
-}
-local indiceVel = 2
-
-local SpeedSelectorBtn = Instance.new("TextButton")
-SpeedSelectorBtn.Size = UDim2.new(1, 0, 0, 34)
-SpeedSelectorBtn.Position = UDim2.new(0, 0, 0, 224)
-SpeedSelectorBtn.BackgroundColor3 = Color3.fromRGB(75, 45, 85)
-SpeedSelectorBtn.Text = "Auto Farm -> Velocidad: 500"
-SpeedSelectorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-SpeedSelectorBtn.Font = Enum.Font.GothamBold
-SpeedSelectorBtn.TextSize = 12
-SpeedSelectorBtn.ZIndex = 4
-SpeedSelectorBtn.Parent = MainPage
-Instance.new("UICorner", SpeedSelectorBtn).CornerRadius = UDim.new(0, 8)
-
-SpeedSelectorBtn.MouseButton1Click:Connect(function()
-    indiceVel = indiceVel + 1
-    if indiceVel > #opcionesVelocidad then
-        indiceVel = 1
-    end
-    getgenv().VelocidadFarm = opcionesVelocidad[indiceVel][2]
-    SpeedSelectorBtn.Text = "Auto Farm -> " .. opcionesVelocidad[indiceVel][1]
-end)
-
--- Selector Tiempo
-local opcionesTiempo = {
-    {"1 segundo", 1},
-    {"1 minuto", 60},
-    {"2 minutos", 120},
-    {"5 minutos", 300},
-    {"10 minutos", 600}
-}
-local indiceTiempo = 1
-
-local TimeSel
+            w
