@@ -1,9 +1,9 @@
--- ==========================================
+-- =========================================================================
 -- Script: JoseAngel_Blox premium no key
 -- Creador: JoseAngel_Blox
--- Versión: 2.7 | Fecha: 02/08/2026
--- UPDATE: Fix de resolución (700x700) + VirtualInputManager (Simulación táctil para Delta)
--- ==========================================
+-- Versión: 2.8 | Fecha: 02/08/2026
+-- UPDATE: Lógica de FartezHub adaptada 100% para Celular/Delta (Touch + VIM)
+-- =========================================================================
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -14,11 +14,10 @@ local TweenService = game:GetService("TweenService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- ==========================================
+-- =========================================================================
 -- 1. CACHÉ DE REMOTOS Y VARIABLES GLOBALES
--- ==========================================
+-- =========================================================================
 local Network = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
 local KickEvent = Network:WaitForChild("rev_KickEvent")
 local MultiplierEvent = Network:WaitForChild("rev_TaviMishkal")
@@ -46,15 +45,39 @@ local validWeights = {
     ["Planet Barbell"] = true
 }
 
--- ==========================================
--- 2. FUNCIONES DE AUTOCLICK Y AUTOCOLLECT
--- ==========================================
+-- =========================================================================
+-- 2. SISTEMA UNIVERSAL DE CLICS PARA MÓVIL (FartezHub + Delta)
+-- =========================================================================
 
--- Clic Universal (VirtualInputManager + getconnections para Móvil/Delta)
-local function ForzarClicUI(target)
+local function activarBonoCelular(target)
     if not target or not target:IsA("GuiObject") or not target.Visible then return end
+    
+    -- 1. Disparo de conexiones internas (FartezHub adaptado para pantalla táctil)
+    if type(getconnections) == "function" then
+        pcall(function()
+            if target.MouseButton1Click then
+                for _, conn in pairs(getconnections(target.MouseButton1Click)) do
+                    conn:Fire()
+                end
+            end
+        end)
+        pcall(function()
+            if target.InputBegan then
+                for _, conn in pairs(getconnections(target.InputBegan)) do
+                    conn:Fire({
+                        UserInputType = Enum.UserInputType.Touch,
+                        UserInputState = Enum.UserInputState.Begin
+                    })
+                    conn:Fire({
+                        UserInputType = Enum.UserInputType.MouseButton1,
+                        UserInputState = Enum.UserInputState.Begin
+                    })
+                end
+            end
+        end)
+    end
 
-    -- 1. Simular Toque Táctil Real en las coordenadas de la pantalla (100% compatible con Delta)
+    -- 2. Respaldo táctil físico para Delta Android
     pcall(function()
         local pos = target.AbsolutePosition
         local size = target.AbsoluteSize
@@ -62,55 +85,50 @@ local function ForzarClicUI(target)
         local centerY = pos.Y + (size.Y / 2)
 
         VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 1)
-        task.wait(0.02)
+        task.wait(0.01)
         VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 1)
     end)
-
-    -- 2. Disparar conexiones internas por si el juego usa señales directas
-    if type(getconnections) == "function" then
-        local eventos = {"Activated", "MouseButton1Click", "MouseButton1Down", "TouchTap"}
-        for _, ev in pairs(eventos) do
-            pcall(function()
-                if target[ev] then
-                    for _, conn in pairs(getconnections(target[ev])) do
-                        conn:Fire()
-                    end
-                end
-            end)
-        end
-        pcall(function()
-            if target.InputBegan then
-                for _, conn in pairs(getconnections(target.InputBegan)) do
-                    conn:Fire({UserInputType = Enum.UserInputType.Touch, UserInputState = Enum.UserInputState.Begin})
-                    conn:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.Begin})
-                end
-            end
-        end)
-    end
 end
 
-local function procesarBonos()
-    local kickUpgrades = PlayerGui:FindFirstChild("KickUpgrades")
+local function procesarKickUpgrades()
+    local pg = LocalPlayer:FindFirstChild("PlayerGui")
+    if not pg then return end
+
+    local kickUpgrades = pg:FindFirstChild("KickUpgrades")
     if kickUpgrades then
         for _, bonus in pairs(kickUpgrades:GetChildren()) do
             if (bonus.Name == "Bonus" or bonus.Name == "PopBonus") and bonus:IsA("GuiObject") and bonus.Visible then
-                ForzarClicUI(bonus)
-                for _, desc in pairs(bonus:GetDescendants()) do
-                    if desc:IsA("GuiObject") and desc.Visible then
-                        ForzarClicUI(desc)
-                    end
+                
+                if not bonus:GetAttribute("AutoClicked") then
+                    bonus:SetAttribute("AutoClicked", true)
+                    task.spawn(function()
+                        task.wait(0.1)
+                        activarBonoCelular(bonus)
+                        local imgLabel = bonus:FindFirstChild("ImageLabel")
+                        if imgLabel then activarBonoCelular(imgLabel) end
+                    end)
+                else
+                    -- Si el bono sigue visible, seguimos intentando sin bloquear
+                    activarBonoCelular(bonus)
+                    local imgLabel = bonus:FindFirstChild("ImageLabel")
+                    if imgLabel then activarBonoCelular(imgLabel) end
+                end
+
+            else
+                if bonus:GetAttribute("AutoClicked") then
+                    bonus:SetAttribute("AutoClicked", nil)
                 end
             end
         end
     end
 end
 
--- A) AUTO CLICK X2 SOLO BONOS
+-- A) AUTO CLICK X2 (Solo Bonos)
 local function startAutoClickX2()
     task.spawn(function()
         while getgenv().AutoClickX2 do
-            pcall(procesarBonos)
-            task.wait(0.25)
+            pcall(procesarKickUpgrades)
+            task.wait(0.15)
         end
     end)
 end
@@ -122,7 +140,7 @@ local function startAutoTrainX2()
 
     task.spawn(function()
         while getgenv().AutoTrainX2 and (currentTick == trainTick) do
-            -- 1. Auto Equipar y Entrenar con Pesa
+            -- 1. Auto Equipar y Entrenar
             pcall(function()
                 local char = LocalPlayer.Character
                 local hum = char and char:FindFirstChild("Humanoid")
@@ -133,11 +151,12 @@ local function startAutoTrainX2()
                 if not isHoldingValidWeight then
                     if currentTool and hum then hum:UnequipTools() end
                     
-                    local slot1 = PlayerGui:FindFirstChild("Backpack") and PlayerGui.Backpack:FindFirstChild("Bar") and PlayerGui.Backpack.Bar:FindFirstChild("Slot1")
-                    if slot1 then ForzarClicUI(slot1) end
+                    local pg = LocalPlayer:FindFirstChild("PlayerGui")
+                    local slot1 = pg and pg:FindFirstChild("Backpack") and pg.Backpack:FindFirstChild("Bar") and pg.Backpack.Bar:FindFirstChild("Slot1")
+                    if slot1 then activarBonoCelular(slot1) end
                     task.wait(0.1)
                     
-                    if not char:FindFirstChildOfClass("Tool") and backpack and hum then
+                    if not (char and char:FindFirstChildOfClass("Tool")) and backpack and hum then
                         for _, tool in pairs(backpack:GetChildren()) do
                             if tool:IsA("Tool") and validWeights[tool.Name] then
                                 hum:EquipTool(tool)
@@ -148,15 +167,15 @@ local function startAutoTrainX2()
                 else
                     if currentTool then
                         currentTool:Activate()
-                        if type(getconnections) == "function" then
+                        if type(getconnections) == "function" and currentTool.Activated then
                             for _, c in pairs(getconnections(currentTool.Activated)) do c:Fire() end
                         end
                     end
                 end
             end)
 
-            -- 2. Auto-click para los bonos de KickUpgrades
-            pcall(procesarBonos)
+            -- 2. Auto Clic a los Bonos
+            pcall(procesarKickUpgrades)
             
             task.wait(0.15)
         end
@@ -229,9 +248,9 @@ local function startAutoCollectCash()
     end)
 end
 
--- ==========================================
--- 3. CREACIÓN DE LA INTERFAZ
--- ==========================================
+-- =========================================================================
+-- 3. INTERFAZ GRÁFICA (OPTIMIZADA PARA RESOLUCIÓN MÓVIL)
+-- =========================================================================
 if CoreGui:FindFirstChild("JoseAngel_Blox_GUI") then
     CoreGui.JoseAngel_Blox_GUI:Destroy()
 end
@@ -251,7 +270,7 @@ MainFrame.Parent = ScreenGui
 
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 14)
 
--- Imagen de fondo con resolución corregida (700x700 en lugar de 720x720)
+-- Imagen de fondo (Resolución corregida 700x700)
 local BackgroundImage = Instance.new("ImageLabel")
 BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 BackgroundImage.BackgroundTransparency = 1
@@ -395,7 +414,7 @@ InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 12
 InfoText.TextWrapped = true
 InfoText.ZIndex = 4
-InfoText.Text = "Creador: JoseAngel_Blox\n\nVersión: 2.7\n\nUPDATE: Corregido error de miniatura en consola y agregado soporte táctil (VirtualInputManager) para Delta."
+InfoText.Text = "Creador: JoseAngel_Blox\n\nVersión: 2.8 (Delta Celular Edition)\n\nUPDATE: Sistema de FartezHub adaptado a pantalla táctil, auto-equipado de pesas y cero errores de consola."
 InfoText.Parent = InfoPage
 
 -- Generador de Toggles
@@ -459,9 +478,9 @@ local function createToggle(name, posY, callback)
     return container
 end
 
--- ==========================================
--- 4. REGISTRO DE TOGGLES EN MAIN
--- ==========================================
+-- =========================================================================
+-- 4. REGISTRO DE BOTONES EN LA INTERFAZ
+-- =========================================================================
 
 createToggle("Auto Kick", 0, function(state)
     getgenv().AutoKick = state
@@ -496,47 +515,4 @@ createToggle("Auto Farm (Safe Zone)", 44, function(state)
                         end
                     end
                 end)
-                task.wait(0.05)
-            end
-        end)
-    else
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.WalkSpeed = 16
-        end
-    end
-end)
-
-createToggle("Multiplier x2", 88, function(state)
-    getgenv().MultiplierX2 = state
-    if state then
-        task.spawn(function()
-            while getgenv().MultiplierX2 do
-                pcall(function() MultiplierEvent:FireServer() end)
-                task.wait(2)
-            end
-        end)
-    end
-end)
-
-createToggle("Auto Click x2 (Bonos)", 132, function(state)
-    getgenv().AutoClickX2 = state
-    if state then
-        startAutoClickX2()
-    end
-end)
-
-createToggle("Auto Train & x2 (Pesas + Bonos)", 176, function(state)
-    getgenv().AutoTrainX2 = state
-    if state then
-        startAutoTrainX2()
-    end
-end)
-
-createToggle("Auto Collect Cash", 220, function(state)
-    getgenv().AutoCollectCash = state
-    if state then
-        startAutoCollectCash()
-    end
-end)
-
-print("[JoseAngel_B
+                task.wait(0.05
