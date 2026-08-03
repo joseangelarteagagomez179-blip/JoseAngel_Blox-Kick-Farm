@@ -1,14 +1,10 @@
 -- ==========================================
 -- Script: JoseAngel_Blox premium no key
--- Creador: JoseAngel_Blox
--- Versión: 2.0 | Fecha: 02/08/2026
--- UPDATE: Fix universal de imagen de fondo (ID: 130801971957660 con rbxthumb) + Toggles Pro
--- NUEVO: Auto Click x2 mejorado + Auto Collect Cash
+-- Versión: Delta Executor Compatible
 -- ==========================================
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
@@ -23,19 +19,19 @@ local KickEvent = Network:WaitForChild("rev_KickEvent")
 local MultiplierEvent = Network:WaitForChild("rev_TaviMishkal")
 local kickArgs = {1, 1}
 
--- Variables globales de control
+-- Variables globales
 getgenv().AutoKick = false
 getgenv().AutoFarm = false
 getgenv().VelocidadFarm = 500
 getgenv().MultiplierX2 = false
 getgenv().AutoClickX2 = false
 getgenv().IntervaloX2 = 1
-getgenv().AutoCollectCash = false  -- NUEVA VARIABLE
+getgenv().AutoCollectCash = false
 
 -- ==========================================
--- 2. RECOLECTOR DE BOTONES X2 (VERSIÓN MEJORADA CON GETCONNECTIONS)
+-- 2. AUTO CLICK X2 (VERSIÓN DELTA COMPATIBLE)
 -- ==========================================
-local function reclamarBotonesX2Mejorado()
+local function reclamarBotonesX2Delta()
     pcall(function()
         local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
         if not playerGui then return end
@@ -44,49 +40,46 @@ local function reclamarBotonesX2Mejorado()
         if not kickUpgrades then return end
         
         for _, bonus in pairs(kickUpgrades:GetChildren()) do
-            -- Busca el botón Bonus o PopBonus
             if (bonus.Name == "Bonus" or bonus.Name == "PopBonus") and bonus.Visible then
-                -- Evita hacer clic múltiples veces en el mismo bonus
                 if bonus:GetAttribute("AutoClicked") then return end
                 bonus:SetAttribute("AutoClicked", true)
                 
                 task.spawn(function()
-                    task.wait(0.2)
-                    local imgLabel = bonus:FindFirstChild("ImageLabel")
-                    local targets = {bonus}
-                    if imgLabel then table.insert(targets, imgLabel) end
-                    
-                    -- Usa getconnections para simular el clic de forma fiable
-                    if getconnections then
-                        for _, target in pairs(targets) do
-                            -- Evento InputBegan (Mouse y Touch)
-                            pcall(function()
-                                for _, conn in pairs(getconnections(target.InputBegan)) do
-                                    conn:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.Begin})
-                                    conn:Fire({UserInputType = Enum.UserInputType.Touch, UserInputState = Enum.UserInputState.Begin})
-                                end
-                            end)
-                            -- Evento MouseButton1Down
-                            pcall(function()
-                                for _, conn in pairs(getconnections(target.MouseButton1Down)) do conn:Fire() end
-                            end)
-                            -- Evento MouseButton1Up
-                            pcall(function()
-                                for _, conn in pairs(getconnections(target.MouseButton1Up)) do conn:Fire() end
-                            end)
-                            -- Evento MouseButton1Click
-                            pcall(function()
-                                for _, conn in pairs(getconnections(target.MouseButton1Click)) do conn:Fire() end
-                            end)
-                            -- Evento Activated
-                            pcall(function()
-                                for _, conn in pairs(getconnections(target.Activated)) do conn:Fire() end
-                            end)
+                    task.wait(0.1)
+                    -- Método alternativo para Delta: fireclickdetector o simulación manual
+                    pcall(function()
+                        -- Intentar con fireclickdetector
+                        local detector = bonus:FindFirstChild("ClickDetector")
+                        if detector then
+                            fireclickdetector(detector)
                         end
-                    end
+                    end)
+                    pcall(function()
+                        -- Intentar con MouseButton1Click
+                        if bonus.MouseButton1Click then
+                            bonus.MouseButton1Click:Fire()
+                        end
+                    end)
+                    pcall(function()
+                        -- Intentar con Activated
+                        if bonus.Activated then
+                            bonus.Activated:Fire()
+                        end
+                    end)
+                    -- Intentar con InputBegan (simulación manual)
+                    pcall(function()
+                        if bonus.InputBegan then
+                            bonus.InputBegan:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.Begin})
+                        end
+                    end)
+                    task.wait(0.05)
+                    pcall(function()
+                        if bonus.InputEnded then
+                            bonus.InputEnded:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.End})
+                        end
+                    end)
                 end)
             else
-                -- Si el botón ya no está visible, resetea el atributo
                 pcall(function()
                     if bonus:GetAttribute("AutoClicked") then
                         bonus:SetAttribute("AutoClicked", nil)
@@ -98,7 +91,7 @@ local function reclamarBotonesX2Mejorado()
 end
 
 -- ==========================================
--- 3. AUTO COLLECT CASH (NUEVA FUNCIÓN)
+-- 3. AUTO COLLECT CASH (VERSIÓN DELTA COMPATIBLE)
 -- ==========================================
 local lockedPlot = nil
 
@@ -162,7 +155,7 @@ local function collectCash()
 end
 
 -- ==========================================
--- 4. CREACIÓN DE LA INTERFAZ (GUI COMPACTA CON FONDO)
+-- 4. CREACIÓN DE LA GUI
 -- ==========================================
 if CoreGui:FindFirstChild("JoseAngel_Blox_GUI") then
     CoreGui.JoseAngel_Blox_GUI:Destroy()
@@ -185,9 +178,7 @@ local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = MainFrame
 
--- ==========================================
--- 4.1 IMAGEN DE FONDO PERSONALIZADA (FIX CON RBXTHUMB)
--- ==========================================
+-- Fondo
 local BackgroundImage = Instance.new("ImageLabel")
 BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
@@ -202,7 +193,6 @@ local BgCorner = Instance.new("UICorner")
 BgCorner.CornerRadius = UDim.new(0, 14)
 BgCorner.Parent = BackgroundImage
 
--- Capa oscura suave para legibilidad de los textos y botones
 local DarkOverlay = Instance.new("Frame")
 DarkOverlay.Size = UDim2.new(1, 0, 1, 0)
 DarkOverlay.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
@@ -214,9 +204,7 @@ local OverlayCorner = Instance.new("UICorner")
 OverlayCorner.CornerRadius = UDim.new(0, 14)
 OverlayCorner.Parent = DarkOverlay
 
--- ==========================================
--- 5. CABECERA (TÍTULO RAINBOW EN OLA)
--- ==========================================
+-- Cabecera
 local HeaderFrame = Instance.new("Frame")
 HeaderFrame.Size = UDim2.new(1, 0, 0, 50)
 HeaderFrame.BackgroundTransparency = 1
@@ -262,9 +250,7 @@ SubTitleLabel.TextSize = 12
 SubTitleLabel.ZIndex = 3
 SubTitleLabel.Parent = HeaderFrame
 
--- ==========================================
--- 6. PESTAÑAS Y CONTENEDORES
--- ==========================================
+-- Pestañas
 local TabContainer = Instance.new("Frame")
 TabContainer.Size = UDim2.new(0, 110, 1, -60)
 TabContainer.Position = UDim2.new(0, 10, 0, 55)
@@ -298,7 +284,7 @@ MainPage.Position = UDim2.new(0, 8, 0, 8)
 MainPage.BackgroundTransparency = 1
 MainPage.Visible = false
 MainPage.ScrollBarThickness = 3
-MainPage.CanvasSize = UDim2.new(0, 0, 0, 380) -- Aumentado para más toggles
+MainPage.CanvasSize = UDim2.new(0, 0, 0, 380)
 MainPage.ZIndex = 4
 MainPage.Parent = ContentContainer
 
@@ -333,9 +319,7 @@ MainBtn.Parent = TabContainer
 Instance.new("UICorner", MainBtn).CornerRadius = UDim.new(0, 8)
 MainBtn.MouseButton1Click:Connect(function() switchTab("Main") end)
 
--- ==========================================
--- 7. CONTENIDO INFORMACIÓN
--- ==========================================
+-- Info
 local InfoText = Instance.new("TextLabel")
 InfoText.Size = UDim2.new(1, 0, 1, 0)
 InfoText.BackgroundTransparency = 1
@@ -348,13 +332,18 @@ InfoText.TextWrapped = true
 InfoText.ZIndex = 4
 InfoText.Text = "Nombre del Creador: JoseAngel_Blox\n\n" ..
                 "Fecha de lanzamiento: 02/08/2026\n\n" ..
-                "Versión: 2.0\n\n" ..
-                "UPDATE: Fix de imagen de fondo (130801971957660) con carga universal rbxthumb, Toggles Animados Pro y velocidad de Farm constante.\n\n" ..
-                "NUEVO: Auto Click x2 mejorado + Auto Collect Cash"
+                "Versión: 3.0 (Delta Compatible)\n\n" ..
+                "Características:\n" ..
+                "- Auto Kick\n" ..
+                "- Auto Farm (Safe Zone)\n" ..
+                "- Multiplier x2\n" ..
+                "- Auto Click x2 (Bonuses)\n" ..
+                "- Auto Collect Cash\n\n" ..
+                "Ejecutor: Delta Executor"
 InfoText.Parent = InfoPage
 
 -- ==========================================
--- 8. GENERADOR DE TOGGLES ANIMADOS (ESTILO PRO)
+-- 5. GENERADOR DE TOGGLES
 -- ==========================================
 local function createToggle(name, posY, callback)
     local container = Instance.new("TextButton")
@@ -380,19 +369,17 @@ local function createToggle(name, posY, callback)
     label.ZIndex = 5
     label.Parent = container
     
-    -- Fondo del interruptor (Cápsula ON/OFF)
     local switchBG = Instance.new("Frame")
     switchBG.Size = UDim2.new(0, 46, 0, 24)
     switchBG.Position = UDim2.new(1, -56, 0.5, -12)
-    switchBG.BackgroundColor3 = Color3.fromRGB(190, 45, 45) -- Rojo oscuro (OFF)
+    switchBG.BackgroundColor3 = Color3.fromRGB(190, 45, 45)
     switchBG.ZIndex = 5
     switchBG.Parent = container
     Instance.new("UICorner", switchBG).CornerRadius = UDim.new(1, 0)
     
-    -- Círculo deslizante del interruptor
     local knob = Instance.new("Frame")
     knob.Size = UDim2.new(0, 18, 0, 18)
-    knob.Position = UDim2.new(0, 3, 0.5, -9) -- Izquierda (OFF)
+    knob.Position = UDim2.new(0, 3, 0.5, -9)
     knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     knob.ZIndex = 6
     knob.Parent = switchBG
@@ -419,10 +406,10 @@ local function createToggle(name, posY, callback)
 end
 
 -- ==========================================
--- 9. REGISTRO DE TOGGLES Y SELECTORES
+-- 6. TOGGLES Y SELECTORES
 -- ==========================================
 
--- 1) Auto Kick
+-- Auto Kick
 createToggle("Auto Kick", 0, function(state)
     getgenv().AutoKick = state
     if state then
@@ -435,7 +422,7 @@ createToggle("Auto Kick", 0, function(state)
     end
 end)
 
--- 2) Auto Farm (Safe Zone)
+-- Auto Farm
 createToggle("Auto Farm (Safe Zone)", 44, function(state)
     getgenv().AutoFarm = state
     if state then
@@ -443,11 +430,9 @@ createToggle("Auto Farm (Safe Zone)", 44, function(state)
             while getgenv().AutoFarm do
                 pcall(function()
                     KickEvent:FireServer(unpack(kickArgs))
-                    
                     local char = LocalPlayer.Character
                     if char and char:FindFirstChild("Humanoid") then
                         char.Humanoid.WalkSpeed = getgenv().VelocidadFarm
-                        
                         local areas = Workspace:FindFirstChild("Areas")
                         if areas and areas:FindFirstChild("KickReady") then
                             local safeZone = areas.KickReady
@@ -474,7 +459,7 @@ createToggle("Auto Farm (Safe Zone)", 44, function(state)
     end
 end)
 
--- 3) Multiplier x2
+-- Multiplier x2
 createToggle("Multiplier x2", 88, function(state)
     getgenv().MultiplierX2 = state
     if state then
@@ -487,20 +472,20 @@ createToggle("Multiplier x2", 88, function(state)
     end
 end)
 
--- 4) Auto Click x2 (MEJORADO con getconnections)
+-- Auto Click x2 (Delta Compatible)
 createToggle("Auto Click x2 (Bonuses)", 132, function(state)
     getgenv().AutoClickX2 = state
     if state then
         task.spawn(function()
             while getgenv().AutoClickX2 do
-                reclamarBotonesX2Mejorado()
+                reclamarBotonesX2Delta()
                 task.wait(math.min(getgenv().IntervaloX2, 0.5))
             end
         end)
     end
 end)
 
--- 5) Auto Collect Cash (NUEVO)
+-- Auto Collect Cash
 createToggle("Auto Collect Cash 💰", 176, function(state)
     getgenv().AutoCollectCash = state
     if state then
@@ -511,10 +496,57 @@ createToggle("Auto Collect Cash 💰", 176, function(state)
             end
         end)
     else
-        lockedPlot = nil -- Reinicia la parcela al desactivar
+        lockedPlot = nil
     end
 end)
 
--- 6) Selector de Velocidad para Auto Farm
+-- Selector Velocidad
 local opcionesVelocidad = {
-    {"V
+    {"Velocidad Farm: 200", 200},
+    {"Velocidad Farm: 500", 500},
+    {"Velocidad Farm: 1000", 1000},
+    {"Velocidad Farm: 1500", 1500}
+}
+local indiceVel = 2
+
+local SpeedSelectorBtn = Instance.new("TextButton")
+SpeedSelectorBtn.Size = UDim2.new(1, 0, 0, 34)
+SpeedSelectorBtn.Position = UDim2.new(0, 0, 0, 224)
+SpeedSelectorBtn.BackgroundColor3 = Color3.fromRGB(75, 45, 85)
+SpeedSelectorBtn.Text = "Auto Farm -> Velocidad: 500"
+SpeedSelectorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedSelectorBtn.Font = Enum.Font.GothamBold
+SpeedSelectorBtn.TextSize = 12
+SpeedSelectorBtn.ZIndex = 4
+SpeedSelectorBtn.Parent = MainPage
+Instance.new("UICorner", SpeedSelectorBtn).CornerRadius = UDim.new(0, 8)
+
+SpeedSelectorBtn.MouseButton1Click:Connect(function()
+    indiceVel = indiceVel + 1
+    if indiceVel > #opcionesVelocidad then
+        indiceVel = 1
+    end
+    getgenv().VelocidadFarm = opcionesVelocidad[indiceVel][2]
+    SpeedSelectorBtn.Text = "Auto Farm -> " .. opcionesVelocidad[indiceVel][1]
+end)
+
+-- Selector Tiempo
+local opcionesTiempo = {
+    {"1 segundo", 1},
+    {"1 minuto", 60},
+    {"2 minutos", 120},
+    {"5 minutos", 300},
+    {"10 minutos", 600}
+}
+local indiceTiempo = 1
+
+local TimeSelectorBtn = Instance.new("TextButton")
+TimeSelectorBtn.Size = UDim2.new(1, 0, 0, 34)
+TimeSelectorBtn.Position = UDim2.new(0, 0, 0, 266)
+TimeSelectorBtn.BackgroundColor3 = Color3.fromRGB(40, 75, 110)
+TimeSelectorBtn.Text = "Tiempo Auto Click x2: 1 segundo"
+TimeSelectorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TimeSelectorBtn.Font = Enum.Font.GothamBold
+TimeSelectorBtn.TextSize = 12
+TimeSelectorBtn.ZIndex = 4
+TimeSelectorBtn.Parent = MainPa
