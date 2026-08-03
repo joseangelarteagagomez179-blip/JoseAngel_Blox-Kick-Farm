@@ -1,8 +1,8 @@
 -- ==========================================
 -- Script: JoseAngel_Blox premium no key
 -- Creador: JoseAngel_Blox
--- Versión: 2.4 | Fecha: 02/08/2026
--- UPDATE: Bloque exacto de Auto Click x2 integrado + Auto Collect Cash + UI Pro
+-- Versión: 2.4.1 | Fecha: 02/08/2026
+-- UPDATE: Auto Click x2 ajustado con tu lógica exacta
 -- ==========================================
 
 local Players = game:GetService("Players")
@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -30,7 +31,6 @@ getgenv().VelocidadFarm = 500
 getgenv().MultiplierX2 = false
 getgenv().AutoClickX2 = false
 getgenv().AutoCollectCash = false
-getgenv().IntervaloX2 = 1
 
 local lockedPlot = nil
 
@@ -38,7 +38,7 @@ local lockedPlot = nil
 -- 2. FUNCIONES DE AUTOCLICK Y AUTOCOLLECT
 -- ==========================================
 
--- A) AUTO CLICK X2 (Con tu código exacto integrado y protegido)
+-- A) AUTO CLICK X2 (Con tu estructura exacta optimizada)
 local function startAutoClickX2()
     task.spawn(function()
         while getgenv().AutoClickX2 do
@@ -55,14 +55,24 @@ local function startAutoClickX2()
                                     local imgLabel = bonus:FindFirstChild("ImageLabel")
                                     if imgLabel then table.insert(targets, imgLabel) end
                                     
-                                    if type(getconnections) == "function" then
+                                    if getconnections then
                                         for _, target in pairs(targets) do
                                             pcall(function() for _, conn in pairs(getconnections(target.MouseButton1Click)) do conn:Fire() end end)
                                             pcall(function() for _, conn in pairs(getconnections(target.InputBegan)) do conn:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.Begin}) end end)
                                         end
+                                    else
+                                        -- Fallback si el ejecutor no soporta getconnections
+                                        for _, target in pairs(targets) do
+                                            pcall(function()
+                                                local pos = target.AbsolutePosition + (target.AbsoluteSize / 2)
+                                                VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y, 0, true, game, 1)
+                                                task.wait(0.05)
+                                                VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y, 0, false, game, 1)
+                                            end)
+                                        end
                                     end
                                 end)
-                            else
+                            elseif not bonus.Visible then
                                 bonus:SetAttribute("AutoClicked", nil)
                             end
                         end
@@ -160,26 +170,17 @@ MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 14)
-MainCorner.Parent = MainFrame
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 14)
 
--- ==========================================
--- 3.1 IMAGEN DE FONDO
--- ==========================================
+-- Imagen de fondo
 local BackgroundImage = Instance.new("ImageLabel")
 BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
-BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
 BackgroundImage.BackgroundTransparency = 1
 BackgroundImage.Image = "rbxthumb://type=Asset&id=130801971957660&w=720&h=720"
 BackgroundImage.ScaleType = Enum.ScaleType.Crop
-BackgroundImage.ImageTransparency = 0
 BackgroundImage.ZIndex = 1
 BackgroundImage.Parent = MainFrame
-
-local BgCorner = Instance.new("UICorner")
-BgCorner.CornerRadius = UDim.new(0, 14)
-BgCorner.Parent = BackgroundImage
+Instance.new("UICorner", BackgroundImage).CornerRadius = UDim.new(0, 14)
 
 local DarkOverlay = Instance.new("Frame")
 DarkOverlay.Size = UDim2.new(1, 0, 1, 0)
@@ -187,14 +188,9 @@ DarkOverlay.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
 DarkOverlay.BackgroundTransparency = 0.45
 DarkOverlay.ZIndex = 2
 DarkOverlay.Parent = MainFrame
+Instance.new("UICorner", DarkOverlay).CornerRadius = UDim.new(0, 14)
 
-local OverlayCorner = Instance.new("UICorner")
-OverlayCorner.CornerRadius = UDim.new(0, 14)
-OverlayCorner.Parent = DarkOverlay
-
--- ==========================================
--- 4. CABECERA
--- ==========================================
+-- Cabecera
 local HeaderFrame = Instance.new("Frame")
 HeaderFrame.Size = UDim2.new(1, 0, 0, 50)
 HeaderFrame.BackgroundTransparency = 1
@@ -240,9 +236,7 @@ SubTitleLabel.TextSize = 12
 SubTitleLabel.ZIndex = 3
 SubTitleLabel.Parent = HeaderFrame
 
--- ==========================================
--- 5. PESTAÑAS Y CONTENEDORES
--- ==========================================
+-- Contenedores
 local TabContainer = Instance.new("Frame")
 TabContainer.Size = UDim2.new(0, 110, 1, -60)
 TabContainer.Position = UDim2.new(0, 10, 0, 55)
@@ -311,9 +305,7 @@ MainBtn.Parent = TabContainer
 Instance.new("UICorner", MainBtn).CornerRadius = UDim.new(0, 8)
 MainBtn.MouseButton1Click:Connect(function() switchTab("Main") end)
 
--- ==========================================
--- 6. CONTENIDO INFORMACIÓN
--- ==========================================
+-- Info Text
 local InfoText = Instance.new("TextLabel")
 InfoText.Size = UDim2.new(1, 0, 1, 0)
 InfoText.BackgroundTransparency = 1
@@ -324,15 +316,10 @@ InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 12
 InfoText.TextWrapped = true
 InfoText.ZIndex = 4
-InfoText.Text = "Nombre del Creador: JoseAngel_Blox\n\n" ..
-                "Fecha de lanzamiento: 02/08/2026\n\n" ..
-                "Versión: 2.4\n\n" ..
-                "UPDATE: Auto Click x2 actualizado con la nueva lógica de bonos."
+InfoText.Text = "Creador: JoseAngel_Blox\n\nVersión: 2.4.1\n\nAuto Click x2 sincronizado con tu bloque personalizado."
 InfoText.Parent = InfoPage
 
--- ==========================================
--- 7. GENERADOR DE TOGGLES ANIMADOS
--- ==========================================
+-- Generador de Toggles
 local function createToggle(name, posY, callback)
     local container = Instance.new("TextButton")
     container.Size = UDim2.new(1, 0, 0, 38)
@@ -393,10 +380,7 @@ local function createToggle(name, posY, callback)
     return container
 end
 
--- ==========================================
--- 8. REGISTRO DE TOGGLES Y SELECTORES
--- ==========================================
-
+-- Toggles en Main
 createToggle("Auto Kick", 0, function(state)
     getgenv().AutoKick = state
     if state then
@@ -416,11 +400,9 @@ createToggle("Auto Farm (Safe Zone)", 44, function(state)
             while getgenv().AutoFarm do
                 pcall(function()
                     KickEvent:FireServer(unpack(kickArgs))
-                    
                     local char = LocalPlayer.Character
                     if char and char:FindFirstChild("Humanoid") then
                         char.Humanoid.WalkSpeed = getgenv().VelocidadFarm
-                        
                         local areas = Workspace:FindFirstChild("Areas")
                         if areas and areas:FindFirstChild("KickReady") then
                             local safeZone = areas.KickReady
@@ -428,11 +410,6 @@ createToggle("Auto Farm (Safe Zone)", 44, function(state)
                                 char.Humanoid:MoveTo(safeZone.Position)
                             elseif safeZone:IsA("Model") and safeZone.PrimaryPart then
                                 char.Humanoid:MoveTo(safeZone.PrimaryPart.Position)
-                            else
-                                local parte = safeZone:FindFirstChildWhichIsA("BasePart", true)
-                                if parte then
-                                    char.Humanoid:MoveTo(parte.Position)
-                                end
                             end
                         end
                     end
@@ -473,61 +450,4 @@ createToggle("Auto Collect Cash", 176, function(state)
     end
 end)
 
-local opcionesVelocidad = {
-    {"Velocidad Farm: 200", 200},
-    {"Velocidad Farm: 500", 500},
-    {"Velocidad Farm: 1000", 1000},
-    {"Velocidad Farm: 1500", 1500}
-}
-local indiceVel = 2
-
-local SpeedSelectorBtn = Instance.new("TextButton")
-SpeedSelectorBtn.Size = UDim2.new(1, 0, 0, 34)
-SpeedSelectorBtn.Position = UDim2.new(0, 0, 0, 224)
-SpeedSelectorBtn.BackgroundColor3 = Color3.fromRGB(75, 45, 85)
-SpeedSelectorBtn.Text = "Auto Farm -> Velocidad: 500"
-SpeedSelectorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-SpeedSelectorBtn.Font = Enum.Font.GothamBold
-SpeedSelectorBtn.TextSize = 12
-SpeedSelectorBtn.ZIndex = 4
-SpeedSelectorBtn.Parent = MainPage
-Instance.new("UICorner", SpeedSelectorBtn).CornerRadius = UDim.new(0, 8)
-
-SpeedSelectorBtn.MouseButton1Click:Connect(function()
-    indiceVel = indiceVel + 1
-    if indiceVel > #opcionesVelocidad then
-        indiceVel = 1
-    end
-    getgenv().VelocidadFarm = opcionesVelocidad[indiceVel][2]
-    SpeedSelectorBtn.Text = "Auto Farm -> " .. opcionesVelocidad[indiceVel][1]
-end)
-
-local opcionesTiempo = {
-    {"0.1 segundo (Rápido)", 0.1},
-    {"1 segundo", 1},
-    {"5 segundos", 5},
-    {"10 segundos", 10}
-}
-local indiceTiempo = 1
-
-local TimeSelectorBtn = Instance.new("TextButton")
-TimeSelectorBtn.Size = UDim2.new(1, 0, 0, 34)
-TimeSelectorBtn.Position = UDim2.new(0, 0, 0, 266)
-TimeSelectorBtn.BackgroundColor3 = Color3.fromRGB(40, 75, 110)
-TimeSelectorBtn.Text = "Frecuencia Check X2: 0.1s"
-TimeSelectorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-TimeSelectorBtn.Font = Enum.Font.GothamBold
-TimeSelectorBtn.TextSize = 12
-TimeSelectorBtn.ZIndex = 4
-TimeSelectorBtn.Parent = MainPage
-Instance.new("UICorner", TimeSelectorBtn).CornerRadius = UDim.new(0, 8)
-
-TimeSelectorBtn.MouseButton1Click:Connect(function()
-    indiceTiempo = indiceTiempo + 1
-    if indiceTiempo > #opcionesTiempo then
-        indiceTiempo = 1
-    end
-    TimeSelectorBtn.Text = "Frecuencia Check X2: " .. opcionesTiempo[indiceTiempo][1]
-end)
-
-print("[JoseAngel_Blox] Script cargado correctamente - v2.4")
+print("[JoseAngel_Blox] v2.4.1 Cargado con éxito.")
