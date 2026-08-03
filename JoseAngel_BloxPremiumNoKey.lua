@@ -1,6 +1,6 @@
 -- ==========================================
 -- Script: JoseAngel_Blox premium no key
--- Versión: Delta Executor Compatible
+-- Versión: Delta Executor Compatible (v4.0)
 -- ==========================================
 
 local Players = game:GetService("Players")
@@ -8,11 +8,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
--- 1. CACHÉ DE REMOTOS
+-- 1. CACHÉ DE REMOTOS Y VARIABLES
 -- ==========================================
 local Network = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
 local KickEvent = Network:WaitForChild("rev_KickEvent")
@@ -24,74 +26,15 @@ getgenv().AutoKick = false
 getgenv().AutoFarm = false
 getgenv().VelocidadFarm = 500
 getgenv().MultiplierX2 = false
-getgenv().AutoClickX2 = false
-getgenv().IntervaloX2 = 1
 getgenv().AutoCollectCash = false
 
--- ==========================================
--- 2. AUTO CLICK X2 (VERSIÓN DELTA COMPATIBLE)
--- ==========================================
-local function reclamarBotonesX2Delta()
-    pcall(function()
-        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-        if not playerGui then return end
-        
-        local kickUpgrades = playerGui:FindFirstChild("KickUpgrades")
-        if not kickUpgrades then return end
-        
-        for _, bonus in pairs(kickUpgrades:GetChildren()) do
-            if (bonus.Name == "Bonus" or bonus.Name == "PopBonus") and bonus.Visible then
-                if bonus:GetAttribute("AutoClicked") then return end
-                bonus:SetAttribute("AutoClicked", true)
-                
-                task.spawn(function()
-                    task.wait(0.1)
-                    -- Método alternativo para Delta: fireclickdetector o simulación manual
-                    pcall(function()
-                        -- Intentar con fireclickdetector
-                        local detector = bonus:FindFirstChild("ClickDetector")
-                        if detector then
-                            fireclickdetector(detector)
-                        end
-                    end)
-                    pcall(function()
-                        -- Intentar con MouseButton1Click
-                        if bonus.MouseButton1Click then
-                            bonus.MouseButton1Click:Fire()
-                        end
-                    end)
-                    pcall(function()
-                        -- Intentar con Activated
-                        if bonus.Activated then
-                            bonus.Activated:Fire()
-                        end
-                    end)
-                    -- Intentar con InputBegan (simulación manual)
-                    pcall(function()
-                        if bonus.InputBegan then
-                            bonus.InputBegan:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.Begin})
-                        end
-                    end)
-                    task.wait(0.05)
-                    pcall(function()
-                        if bonus.InputEnded then
-                            bonus.InputEnded:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.End})
-                        end
-                    end)
-                end)
-            else
-                pcall(function()
-                    if bonus:GetAttribute("AutoClicked") then
-                        bonus:SetAttribute("AutoClicked", nil)
-                    end
-                end)
-            end
-        end
-    end)
-end
+-- Variables globales (Pestaña Player)
+getgenv().InfiniteJump = false
+getgenv().AntiLag = false
+getgenv().ShowFPS = false
 
 -- ==========================================
--- 3. AUTO COLLECT CASH (VERSIÓN DELTA COMPATIBLE)
+-- 2. AUTO COLLECT CASH
 -- ==========================================
 local lockedPlot = nil
 
@@ -155,7 +98,7 @@ local function collectCash()
 end
 
 -- ==========================================
--- 4. CREACIÓN DE LA GUI
+-- 3. CREACIÓN DE LA GUI
 -- ==========================================
 if CoreGui:FindFirstChild("JoseAngel_Blox_GUI") then
     CoreGui.JoseAngel_Blox_GUI:Destroy()
@@ -269,6 +212,7 @@ ContentContainer.ZIndex = 3
 ContentContainer.Parent = MainFrame
 Instance.new("UICorner", ContentContainer).CornerRadius = UDim.new(0, 10)
 
+-- Páginas
 local InfoPage = Instance.new("ScrollingFrame")
 InfoPage.Size = UDim2.new(1, -16, 1, -16)
 InfoPage.Position = UDim2.new(0, 8, 0, 8)
@@ -284,15 +228,27 @@ MainPage.Position = UDim2.new(0, 8, 0, 8)
 MainPage.BackgroundTransparency = 1
 MainPage.Visible = false
 MainPage.ScrollBarThickness = 3
-MainPage.CanvasSize = UDim2.new(0, 0, 0, 380)
+MainPage.CanvasSize = UDim2.new(0, 0, 0, 200)
 MainPage.ZIndex = 4
 MainPage.Parent = ContentContainer
+
+local PlayerPage = Instance.new("ScrollingFrame")
+PlayerPage.Size = UDim2.new(1, -16, 1, -16)
+PlayerPage.Position = UDim2.new(0, 8, 0, 8)
+PlayerPage.BackgroundTransparency = 1
+PlayerPage.Visible = false
+PlayerPage.ScrollBarThickness = 3
+PlayerPage.CanvasSize = UDim2.new(0, 0, 0, 180)
+PlayerPage.ZIndex = 4
+PlayerPage.Parent = ContentContainer
 
 local function switchTab(tab)
     InfoPage.Visible = (tab == "Info")
     MainPage.Visible = (tab == "Main")
+    PlayerPage.Visible = (tab == "Player")
 end
 
+-- Botones Pestañas
 local InfoBtn = Instance.new("TextButton")
 InfoBtn.Size = UDim2.new(1, -16, 0, 35)
 InfoBtn.Position = UDim2.new(0, 8, 0, 10)
@@ -319,7 +275,20 @@ MainBtn.Parent = TabContainer
 Instance.new("UICorner", MainBtn).CornerRadius = UDim.new(0, 8)
 MainBtn.MouseButton1Click:Connect(function() switchTab("Main") end)
 
--- Info
+local PlayerBtn = Instance.new("TextButton")
+PlayerBtn.Size = UDim2.new(1, -16, 0, 35)
+PlayerBtn.Position = UDim2.new(0, 8, 0, 100)
+PlayerBtn.BackgroundColor3 = Color3.fromRGB(48, 48, 62)
+PlayerBtn.Text = "Player"
+PlayerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+PlayerBtn.Font = Enum.Font.GothamBold
+PlayerBtn.TextSize = 14
+PlayerBtn.ZIndex = 4
+PlayerBtn.Parent = TabContainer
+Instance.new("UICorner", PlayerBtn).CornerRadius = UDim.new(0, 8)
+PlayerBtn.MouseButton1Click:Connect(function() switchTab("Player") end)
+
+-- Info Text
 local InfoText = Instance.new("TextLabel")
 InfoText.Size = UDim2.new(1, 0, 1, 0)
 InfoText.BackgroundTransparency = 1
@@ -332,19 +301,22 @@ InfoText.TextWrapped = true
 InfoText.ZIndex = 4
 InfoText.Text = "Nombre del Creador: JoseAngel_Blox\n\n" ..
                 "Fecha de lanzamiento: 02/08/2026\n\n" ..
-                "Versión: 3.0 (Delta Compatible)\n\n" ..
+                "Versión: 4.0 (Delta Compatible)\n\n" ..
                 "Características:\n" ..
                 "- Auto Kick\n" ..
                 "- Auto Farm (Safe Zone)\n" ..
                 "- Multiplier x2\n" ..
-                "- Auto Collect Cash\n\n" ..
+                "- Auto Collect Cash\n" ..
+                "- Infinite Jump\n" ..
+                "- Anti Lag\n" ..
+                "- Mostrar FPS\n\n" ..
                 "Ejecutor: Delta Executor"
 InfoText.Parent = InfoPage
 
 -- ==========================================
--- 5. GENERADOR DE TOGGLES
+-- 4. GENERADOR DE TOGGLES
 -- ==========================================
-local function createToggle(name, posY, callback)
+local function createToggle(parent, name, posY, callback)
     local container = Instance.new("TextButton")
     container.Size = UDim2.new(1, 0, 0, 38)
     container.Position = UDim2.new(0, 0, 0, posY)
@@ -353,7 +325,7 @@ local function createToggle(name, posY, callback)
     container.Text = ""
     container.AutoButtonColor = false
     container.ZIndex = 4
-    container.Parent = MainPage
+    container.Parent = parent
     Instance.new("UICorner", container).CornerRadius = UDim.new(0, 8)
     
     local label = Instance.new("TextLabel")
@@ -405,11 +377,11 @@ local function createToggle(name, posY, callback)
 end
 
 -- ==========================================
--- 6. TOGGLES Y SELECTORES
+-- 5. TOGGLES: PESTAÑA MAIN
 -- ==========================================
 
 -- Auto Kick
-createToggle("Auto Kick", 0, function(state)
+createToggle(MainPage, "Auto Kick", 0, function(state)
     getgenv().AutoKick = state
     if state then
         task.spawn(function()
@@ -422,7 +394,7 @@ createToggle("Auto Kick", 0, function(state)
 end)
 
 -- Auto Farm
-createToggle("Auto Farm (Safe Zone)", 44, function(state)
+createToggle(MainPage, "Auto Farm (Safe Zone)", 44, function(state)
     getgenv().AutoFarm = state
     if state then
         task.spawn(function()
@@ -459,7 +431,7 @@ createToggle("Auto Farm (Safe Zone)", 44, function(state)
 end)
 
 -- Multiplier x2
-createToggle("Multiplier x2", 88, function(state)
+createToggle(MainPage, "Multiplier x2", 88, function(state)
     getgenv().MultiplierX2 = state
     if state then
         task.spawn(function()
@@ -471,21 +443,8 @@ createToggle("Multiplier x2", 88, function(state)
     end
 end)
 
--- Auto Click x2 (Delta Compatible)
-createToggle("Auto Click x2 (Bonuses)", 132, function(state)
-    getgenv().AutoClickX2 = state
-    if state then
-        task.spawn(function()
-            while getgenv().AutoClickX2 do
-                reclamarBotonesX2Delta()
-                task.wait(math.min(getgenv().IntervaloX2, 0.5))
-            end
-        end)
-    end
-end)
-
 -- Auto Collect Cash
-createToggle("Auto Collect Cash 💰", 176, function(state)
+createToggle(MainPage, "Auto Collect Cash 💰", 132, function(state)
     getgenv().AutoCollectCash = state
     if state then
         task.spawn(function()
@@ -499,32 +458,74 @@ createToggle("Auto Collect Cash 💰", 176, function(state)
     end
 end)
 
--- Selector Velocidad
-local opcionesVelocidad = {
-    {"Velocidad Farm: 200", 200},
-    {"Velocidad Farm: 500", 500},
-    {"Velocidad Farm: 1000", 1000},
-    {"Velocidad Farm: 1500", 1500}
-}
-local indiceVel = 2
+-- ==========================================
+-- 6. TOGGLES: PESTAÑA PLAYER
+-- ==========================================
 
-local SpeedSelectorBtn = Instance.new("TextButton")
-SpeedSelectorBtn.Size = UDim2.new(1, 0, 0, 34)
-SpeedSelectorBtn.Position = UDim2.new(0, 0, 0, 224)
-SpeedSelectorBtn.BackgroundColor3 = Color3.fromRGB(75, 45, 85)
-SpeedSelectorBtn.Text = "Auto Farm -> Velocidad: 500"
-SpeedSelectorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-SpeedSelectorBtn.Font = Enum.Font.GothamBold
-SpeedSelectorBtn.TextSize = 12
-SpeedSelectorBtn.ZIndex = 4
-SpeedSelectorBtn.Parent = MainPage
-Instance.new("UICorner", SpeedSelectorBtn).CornerRadius = UDim.new(0, 8)
+-- Infinite Jump
+createToggle(PlayerPage, "Infinite Jump", 0, function(state)
+    getgenv().InfiniteJump = state
+end)
 
-SpeedSelectorBtn.MouseButton1Click:Connect(function()
-    indiceVel = indiceVel + 1
-    if indiceVel > #opcionesVelocidad then
-        indiceVel = 1
+UserInputService.JumpRequest:Connect(function()
+    if getgenv().InfiniteJump then
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChildOfClass("Humanoid") then
+            char:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+        end
     end
-    getgenv().VelocidadFarm = opcionesVelocidad[indiceVel][2]
-    SpeedSelectorBtn.Text = "Auto Farm -> " .. opcionesVelocidad[indiceVel][1]
+end)
+
+-- Anti Lag
+createToggle(PlayerPage, "Anti Lag", 44, function(state)
+    getgenv().AntiLag = state
+    if state then
+        pcall(function()
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+            for _, v in pairs(game:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.Material = Enum.Material.SmoothPlastic
+                elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") then
+                    v.Enabled = false
+                elseif v:IsA("PostEffect") then
+                    v.Enabled = false
+                end
+            end
+        end)
+    end
+end)
+
+-- Mostrar FPS
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Name = "FPSDisplay"
+fpsLabel.Size = UDim2.new(0, 90, 0, 26)
+fpsLabel.Position = UDim2.new(0, 15, 0, 15)
+fpsLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+fpsLabel.BackgroundTransparency = 0.3
+fpsLabel.TextColor3 = Color3.fromRGB(100, 255, 120)
+fpsLabel.Font = Enum.Font.GothamBold
+fpsLabel.TextSize = 12
+fpsLabel.Visible = false
+fpsLabel.ZIndex = 10
+fpsLabel.Parent = ScreenGui
+Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0, 6)
+
+createToggle(PlayerPage, "Mostrar FPS", 88, function(state)
+    getgenv().ShowFPS = state
+    fpsLabel.Visible = state
+end)
+
+local lastTick = tick()
+local frameCount = 0
+
+RunService.RenderStepped:Connect(function()
+    if getgenv().ShowFPS then
+        frameCount = frameCount + 1
+        local currentTick = tick()
+        if currentTick - lastTick >= 1 then
+            fpsLabel.Text = "FPS: " .. frameCount
+            frameCount = 0
+            lastTick = currentTick
+        end
+    end
 end)
