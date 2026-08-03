@@ -1,6 +1,6 @@
 -- ==========================================
 -- Script: JoseAngel_Blox premium no key
--- Versión: 3.2 Delta Lite (Con Auto Train)
+-- Versión: 3.3 Delta Fixed (Sin fireclickdetector)
 -- ==========================================
 
 local Players = game:GetService("Players")
@@ -12,7 +12,7 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
--- 1. CACHÉ DE REMOTOS
+-- 1. CACHÉ DE REMOTOS CON VERIFICACIÓN
 -- ==========================================
 local Network = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
 local KickEvent = Network:WaitForChild("rev_KickEvent")
@@ -27,10 +27,10 @@ getgenv().MultiplierX2 = false
 getgenv().AutoClickX2 = false
 getgenv().IntervaloX2 = 1
 getgenv().AutoCollectCash = false
-getgenv().AutoTrain = false -- NUEVO: Variable para Auto Train
+getgenv().AutoTrain = false
 
 -- ==========================================
--- 2. AUTO CLICK X2 (VERSIÓN ULTRA COMPATIBLE)
+-- 2. AUTO CLICK X2 (COMPATIBLE CON DELTA)
 -- ==========================================
 local function reclamarBotonesX2Delta()
     pcall(function()
@@ -47,31 +47,46 @@ local function reclamarBotonesX2Delta()
                 
                 task.spawn(function()
                     task.wait(0.1)
+                    
+                    -- MÉTODO 1: Simulación con MouseButton1Click (Delta compatible)
                     pcall(function()
-                        local detector = bonus:FindFirstChild("ClickDetector")
-                        if detector then fireclickdetector(detector) end
+                        if bonus.MouseButton1Click then
+                            bonus.MouseButton1Click:Fire()
+                        end
                     end)
+                    
+                    -- MÉTODO 2: Simulación con Activated
                     pcall(function()
-                        if bonus.MouseButton1Click then bonus.MouseButton1Click:Fire() end
+                        if bonus.Activated then
+                            bonus.Activated:Fire()
+                        end
                     end)
-                    pcall(function()
-                        if bonus.Activated then bonus.Activated:Fire() end
-                    end)
+                    
+                    -- MÉTODO 3: Simulación manual con InputBegan
                     pcall(function()
                         if bonus.InputBegan then
-                            bonus.InputBegan:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.Begin})
+                            bonus.InputBegan:Fire({
+                                UserInputType = Enum.UserInputType.MouseButton1,
+                                UserInputState = Enum.UserInputState.Begin
+                            })
                             task.wait(0.05)
                             if bonus.InputEnded then
-                                bonus.InputEnded:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.End})
+                                bonus.InputEnded:Fire({
+                                    UserInputType = Enum.UserInputType.MouseButton1,
+                                    UserInputState = Enum.UserInputState.End
+                                })
                             end
                         end
                     end)
+                    
                     task.wait(0.3)
                     pcall(function() bonus:SetAttribute("AutoClicked", nil) end)
                 end)
             else
                 pcall(function()
-                    if bonus:GetAttribute("AutoClicked") then bonus:SetAttribute("AutoClicked", nil) end
+                    if bonus:GetAttribute("AutoClicked") then 
+                        bonus:SetAttribute("AutoClicked", nil) 
+                    end
                 end)
             end
         end
@@ -79,7 +94,7 @@ local function reclamarBotonesX2Delta()
 end
 
 -- ==========================================
--- 3. AUTO COLLECT CASH
+-- 3. AUTO COLLECT CASH (CON VERIFICACIÓN)
 -- ==========================================
 local lockedPlot = nil
 
@@ -133,9 +148,10 @@ local function collectCash()
                         pcall(function()
                             ForcedTP(targetCFrame + Vector3.new(0, 1.5, 0))
                             task.wait(0.1)
-                            -- Nota: Asegúrate de que "rev_B_Collect" sea el nombre correcto del remoto en el juego
-                            if Network:FindFirstChild("rev_B_Collect") then
-                                Network.rev_B_Collect:FireServer(i)
+                            -- Verificar si el remoto existe antes de usarlo
+                            local collectRemote = Network:FindFirstChild("rev_B_Collect")
+                            if collectRemote then
+                                collectRemote:FireServer(i)
                             end
                         end)
                     end
@@ -261,7 +277,7 @@ MainPage.Position = UDim2.new(0, 8, 0, 8)
 MainPage.BackgroundTransparency = 1
 MainPage.Visible = false
 MainPage.ScrollBarThickness = 3
-MainPage.CanvasSize = UDim2.new(0, 0, 0, 400) -- Aumentado para que quepa el nuevo botón
+MainPage.CanvasSize = UDim2.new(0, 0, 0, 400)
 MainPage.ZIndex = 4
 MainPage.Parent = ContentContainer
 
@@ -308,14 +324,14 @@ InfoText.TextWrapped = true
 InfoText.ZIndex = 4
 InfoText.Text = "Nombre del Creador: JoseAngel_Blox\n\n" ..
                 "Fecha de lanzamiento: 02/08/2026\n\n" ..
-                "Versión: 3.2 Delta Lite\n\n" ..
+                "Versión: 3.3 Delta Fixed\n\n" ..
                 "Características:\n" ..
                 "✅ Auto Kick\n" ..
                 "✅ Auto Farm (Safe Zone)\n" ..
                 "✅ Multiplier x2\n" ..
                 "✅ Auto Click x2 (Bonuses)\n" ..
                 "✅ Auto Collect Cash\n" ..
-                "✅ Auto Train & x2 (NUEVO)\n\n" ..
+                "✅ Auto Train & x2\n\n" ..
                 "Ejecutor: Delta Executor"
 InfoText.Parent = InfoPage
 
@@ -470,7 +486,7 @@ createToggle("Auto Collect Cash 💰", 176, function(state)
 end)
 
 -- ==========================================
--- 7. AUTO TRAIN (INTEGRADO A TU UI)
+-- 7. AUTO TRAIN (COMPATIBLE CON DELTA)
 -- ==========================================
 local validWeights = {
     ["Wooden Stick"] = true, ["Copper Plate"] = true, ["Stone Block"] = true,
@@ -481,7 +497,7 @@ local validWeights = {
     ["Planet Barbell"] = true
 }
 
-createToggle("Auto Train & x2 🏋️", 220, function(state)
+createToggle("Auto Train & x2 ️", 220, function(state)
     getgenv().AutoTrain = state
     if state then
         task.spawn(function()
@@ -506,19 +522,4 @@ createToggle("Auto Train & x2 🏋️", 220, function(state)
                             end
                         end
                     else
-                        if currentTool then
-                            currentTool:Activate()
-                        end
-                    end
-                end)
-                task.wait(0.15)
-            end
-        end)
-    end
-end)
-
--- ==========================================
--- 8. SELECTORES (POSICIONES AJUSTADAS)
--- ==========================================
-local opcionesVelocidad = {
-    {"Velocidad Farm: 
+                       
