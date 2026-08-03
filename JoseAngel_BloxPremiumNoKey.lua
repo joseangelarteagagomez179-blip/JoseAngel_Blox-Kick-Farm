@@ -1,8 +1,8 @@
 -- =========================================================================
 -- Script: JoseAngel_Blox premium no key
 -- Creador: JoseAngel_Blox
--- Versión: 2.8 | Fecha: 02/08/2026
--- UPDATE: Lógica de FartezHub adaptada 100% para Celular/Delta (Touch + VIM)
+-- Versión: 3.2 | Fecha: 03/08/2026
+-- UPDATE: Velocidad natural en Auto Farm + Ocultar barra de tiempo/recompensas
 -- =========================================================================
 
 local Players = game:GetService("Players")
@@ -11,7 +11,8 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
+local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -26,11 +27,12 @@ local kickArgs = {1, 1}
 
 getgenv().AutoKick = false
 getgenv().AutoFarm = false
-getgenv().VelocidadFarm = 500
 getgenv().MultiplierX2 = false
-getgenv().AutoClickX2 = false
-getgenv().AutoTrainX2 = false
+getgenv().AutoTrain = false
 getgenv().AutoCollectCash = false
+getgenv().InfiniteJump = false
+getgenv().ShowFPS = false
+getgenv().HideTimeBar = false
 
 local lockedPlot = nil
 local trainTick = 0
@@ -46,101 +48,16 @@ local validWeights = {
 }
 
 -- =========================================================================
--- 2. SISTEMA UNIVERSAL DE CLICS PARA MÓVIL (FartezHub + Delta)
+-- 2. FUNCIONES PRINCIPALES (FARM, PLAYER Y BARRA DE TIEMPO)
 -- =========================================================================
 
-local function activarBonoCelular(target)
-    if not target or not target:IsA("GuiObject") or not target.Visible then return end
-    
-    -- 1. Disparo de conexiones internas (FartezHub adaptado para pantalla táctil)
-    if type(getconnections) == "function" then
-        pcall(function()
-            if target.MouseButton1Click then
-                for _, conn in pairs(getconnections(target.MouseButton1Click)) do
-                    conn:Fire()
-                end
-            end
-        end)
-        pcall(function()
-            if target.InputBegan then
-                for _, conn in pairs(getconnections(target.InputBegan)) do
-                    conn:Fire({
-                        UserInputType = Enum.UserInputType.Touch,
-                        UserInputState = Enum.UserInputState.Begin
-                    })
-                    conn:Fire({
-                        UserInputType = Enum.UserInputType.MouseButton1,
-                        UserInputState = Enum.UserInputState.Begin
-                    })
-                end
-            end
-        end)
-    end
-
-    -- 2. Respaldo táctil físico para Delta Android
-    pcall(function()
-        local pos = target.AbsolutePosition
-        local size = target.AbsoluteSize
-        local centerX = pos.X + (size.X / 2)
-        local centerY = pos.Y + (size.Y / 2)
-
-        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 1)
-        task.wait(0.01)
-        VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 1)
-    end)
-end
-
-local function procesarKickUpgrades()
-    local pg = LocalPlayer:FindFirstChild("PlayerGui")
-    if not pg then return end
-
-    local kickUpgrades = pg:FindFirstChild("KickUpgrades")
-    if kickUpgrades then
-        for _, bonus in pairs(kickUpgrades:GetChildren()) do
-            if (bonus.Name == "Bonus" or bonus.Name == "PopBonus") and bonus:IsA("GuiObject") and bonus.Visible then
-                
-                if not bonus:GetAttribute("AutoClicked") then
-                    bonus:SetAttribute("AutoClicked", true)
-                    task.spawn(function()
-                        task.wait(0.1)
-                        activarBonoCelular(bonus)
-                        local imgLabel = bonus:FindFirstChild("ImageLabel")
-                        if imgLabel then activarBonoCelular(imgLabel) end
-                    end)
-                else
-                    -- Si el bono sigue visible, seguimos intentando sin bloquear
-                    activarBonoCelular(bonus)
-                    local imgLabel = bonus:FindFirstChild("ImageLabel")
-                    if imgLabel then activarBonoCelular(imgLabel) end
-                end
-
-            else
-                if bonus:GetAttribute("AutoClicked") then
-                    bonus:SetAttribute("AutoClicked", nil)
-                end
-            end
-        end
-    end
-end
-
--- A) AUTO CLICK X2 (Solo Bonos)
-local function startAutoClickX2()
-    task.spawn(function()
-        while getgenv().AutoClickX2 do
-            pcall(procesarKickUpgrades)
-            task.wait(0.15)
-        end
-    end)
-end
-
--- B) AUTO TRAIN & X2 (Equipa pesa + Entrena + Clic a Bonos)
-local function startAutoTrainX2()
+-- A) AUTO TRAIN
+local function startAutoTrain()
     trainTick = trainTick + 1
     local currentTick = trainTick
 
     task.spawn(function()
-        while getgenv().AutoTrainX2 and (currentTick == trainTick) do
-            -- 1. Auto Equipar y Entrenar
+        while getgenv().AutoTrain and (currentTick == trainTick) do
             pcall(function()
                 local char = LocalPlayer.Character
                 local hum = char and char:FindFirstChild("Humanoid")
@@ -150,12 +67,7 @@ local function startAutoTrainX2()
 
                 if not isHoldingValidWeight then
                     if currentTool and hum then hum:UnequipTools() end
-                    
-                    local pg = LocalPlayer:FindFirstChild("PlayerGui")
-                    local slot1 = pg and pg:FindFirstChild("Backpack") and pg.Backpack:FindFirstChild("Bar") and pg.Backpack.Bar:FindFirstChild("Slot1")
-                    if slot1 then activarBonoCelular(slot1) end
                     task.wait(0.1)
-                    
                     if not (char and char:FindFirstChildOfClass("Tool")) and backpack and hum then
                         for _, tool in pairs(backpack:GetChildren()) do
                             if tool:IsA("Tool") and validWeights[tool.Name] then
@@ -167,22 +79,15 @@ local function startAutoTrainX2()
                 else
                     if currentTool then
                         currentTool:Activate()
-                        if type(getconnections) == "function" and currentTool.Activated then
-                            for _, c in pairs(getconnections(currentTool.Activated)) do c:Fire() end
-                        end
                     end
                 end
             end)
-
-            -- 2. Auto Clic a los Bonos
-            pcall(procesarKickUpgrades)
-            
             task.wait(0.15)
         end
     end)
 end
 
--- C) AUTO COLLECT CASH
+-- B) AUTO COLLECT CASH
 local function ForcedTP(targetCFrame)
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -248,8 +153,67 @@ local function startAutoCollectCash()
     end)
 end
 
+-- C) INFINITE JUMP
+UserInputService.JumpRequest:Connect(function()
+    if getgenv().InfiniteJump then
+        pcall(function()
+            local char = LocalPlayer.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end)
+    end
+end)
+
+-- D) ANTI LAG
+local function activarAntiLag()
+    pcall(function()
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 9e9
+        Lighting.Brightness = 2
+        for _, effect in pairs(Lighting:GetChildren()) do
+            if effect:IsA("PostProcessingEffect") or effect:IsA("BloomEffect") or effect:IsA("SunRaysEffect") or effect:IsA("BlurEffect") then
+                effect.Enabled = false
+            end
+        end
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("BasePart") then
+                obj.Material = Enum.Material.SmoothPlastic
+                obj.Reflectance = 0
+            elseif obj:IsA("Decal") or obj:IsA("Texture") then
+                obj.Transparency = 1
+            elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+                obj.Enabled = false
+            end
+        end
+    end)
+end
+
+-- E) OCULTAR BARRA DE TIEMPO (1 seg, 1 min, 5 min, etc.)
+local function toggleTimeBar(state)
+    pcall(function()
+        local pg = LocalPlayer:FindFirstChild("PlayerGui")
+        if pg then
+            for _, gui in pairs(pg:GetChildren()) do
+                if gui:IsA("ScreenGui") then
+                    for _, desc in pairs(gui:GetDescendants()) do
+                        -- Busca contenedores o textos relacionados con recompensas de tiempo / Daily
+                        local name = string.lower(desc.Name)
+                        if name:find("reward") or name:find("time") or name:find("gift") or name:find("daily") or name:find("playtime") then
+                            if desc:IsA("GuiObject") then
+                                desc.Visible = not state
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
 -- =========================================================================
--- 3. INTERFAZ GRÁFICA (OPTIMIZADA PARA RESOLUCIÓN MÓVIL)
+-- 3. INTERFAZ GRÁFICA (CON BOTÓN ON/OFF Y PESATAÑAS)
 -- =========================================================================
 if CoreGui:FindFirstChild("JoseAngel_Blox_GUI") then
     CoreGui.JoseAngel_Blox_GUI:Destroy()
@@ -259,6 +223,50 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "JoseAngel_Blox_GUI"
 ScreenGui.Parent = CoreGui
 
+-- Botón Flotante para Activar/Desactivar Menú en Celular (Arriba a la Derecha)
+local ToggleMenuBtn = Instance.new("TextButton")
+ToggleMenuBtn.Size = UDim2.new(0, 45, 0, 45)
+ToggleMenuBtn.Position = UDim2.new(1, -60, 0, 15)
+ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(45, 200, 75)
+ToggleMenuBtn.Text = "JA"
+ToggleMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleMenuBtn.Font = Enum.Font.GothamBold
+ToggleMenuBtn.TextSize = 16
+ToggleMenuBtn.ZIndex = 10
+ToggleMenuBtn.Parent = ScreenGui
+Instance.new("UICorner", ToggleMenuBtn).CornerRadius = UDim.new(0, 10)
+
+-- Contador de FPS Flotante
+local FPSLabel = Instance.new("TextLabel")
+FPSLabel.Size = UDim2.new(0, 80, 0, 25)
+FPSLabel.Position = UDim2.new(1, -150, 0, 25)
+FPSLabel.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+FPSLabel.BackgroundTransparency = 0.3
+FPSLabel.Text = "FPS: 60"
+FPSLabel.TextColor3 = Color3.fromRGB(100, 255, 120)
+FPSLabel.Font = Enum.Font.GothamBold
+FPSLabel.TextSize = 13
+FPSLabel.Visible = false
+FPSLabel.ZIndex = 10
+FPSLabel.Parent = ScreenGui
+Instance.new("UICorner", FPSLabel).CornerRadius = UDim.new(0, 6)
+
+local lastUpdate = tick()
+local frameCount = 0
+RunService.RenderStepped:Connect(function()
+    if getgenv().ShowFPS then
+        frameCount = frameCount + 1
+        local now = tick()
+        if now - lastUpdate >= 0.5 then
+            local fps = math.floor(frameCount / (now - lastUpdate))
+            FPSLabel.Text = "FPS: " .. tostring(fps)
+            frameCount = 0
+            lastUpdate = now
+        end
+    end
+end)
+
+-- Marco Principal
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 430, 0, 320)
 MainFrame.Position = UDim2.new(0.5, -215, 0.5, -160)
@@ -270,7 +278,15 @@ MainFrame.Parent = ScreenGui
 
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 14)
 
--- Imagen de fondo (Resolución corregida 700x700)
+-- Lógica del botón Toggle Menu
+local menuVisible = true
+ToggleMenuBtn.MouseButton1Click:Connect(function()
+    menuVisible = not menuVisible
+    MainFrame.Visible = menuVisible
+    ToggleMenuBtn.BackgroundColor3 = menuVisible and Color3.fromRGB(45, 200, 75) or Color3.fromRGB(190, 45, 45)
+end)
+
+-- Imagen de fondo
 local BackgroundImage = Instance.new("ImageLabel")
 BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 BackgroundImage.BackgroundTransparency = 1
@@ -327,7 +343,7 @@ local SubTitleLabel = Instance.new("TextLabel")
 SubTitleLabel.Size = UDim2.new(1, 0, 0, 18)
 SubTitleLabel.Position = UDim2.new(0, 0, 0, 28)
 SubTitleLabel.BackgroundTransparency = 1
-SubTitleLabel.Text = "Creado por JoseAngel_Blox"
+SubTitleLabel.Text = "Creado por JoseAngel_Blox | v3.2 Mobile"
 SubTitleLabel.TextColor3 = Color3.fromRGB(190, 190, 200)
 SubTitleLabel.Font = Enum.Font.Gotham
 SubTitleLabel.TextSize = 12
@@ -353,6 +369,7 @@ ContentContainer.ZIndex = 3
 ContentContainer.Parent = MainFrame
 Instance.new("UICorner", ContentContainer).CornerRadius = UDim.new(0, 10)
 
+-- Páginas (Info, Main, Player)
 local InfoPage = Instance.new("ScrollingFrame")
 InfoPage.Size = UDim2.new(1, -16, 1, -16)
 InfoPage.Position = UDim2.new(0, 8, 0, 8)
@@ -368,42 +385,67 @@ MainPage.Position = UDim2.new(0, 8, 0, 8)
 MainPage.BackgroundTransparency = 1
 MainPage.Visible = false
 MainPage.ScrollBarThickness = 3
-MainPage.CanvasSize = UDim2.new(0, 0, 0, 360)
+MainPage.CanvasSize = UDim2.new(0, 0, 0, 280)
 MainPage.ZIndex = 4
 MainPage.Parent = ContentContainer
+
+local PlayerPage = Instance.new("ScrollingFrame")
+PlayerPage.Size = UDim2.new(1, -16, 1, -16)
+PlayerPage.Position = UDim2.new(0, 8, 0, 8)
+PlayerPage.BackgroundTransparency = 1
+PlayerPage.Visible = false
+PlayerPage.ScrollBarThickness = 3
+PlayerPage.CanvasSize = UDim2.new(0, 0, 0, 220)
+PlayerPage.ZIndex = 4
+PlayerPage.Parent = ContentContainer
 
 local function switchTab(tab)
     InfoPage.Visible = (tab == "Info")
     MainPage.Visible = (tab == "Main")
+    PlayerPage.Visible = (tab == "Player")
 end
 
+-- Botones de Pestaña
 local InfoBtn = Instance.new("TextButton")
-InfoBtn.Size = UDim2.new(1, -16, 0, 35)
+InfoBtn.Size = UDim2.new(1, -16, 0, 32)
 InfoBtn.Position = UDim2.new(0, 8, 0, 10)
 InfoBtn.BackgroundColor3 = Color3.fromRGB(48, 48, 62)
 InfoBtn.Text = "Info"
 InfoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 InfoBtn.Font = Enum.Font.GothamBold
-InfoBtn.TextSize = 14
+InfoBtn.TextSize = 13
 InfoBtn.ZIndex = 4
 InfoBtn.Parent = TabContainer
 Instance.new("UICorner", InfoBtn).CornerRadius = UDim.new(0, 8)
 InfoBtn.MouseButton1Click:Connect(function() switchTab("Info") end)
 
 local MainBtn = Instance.new("TextButton")
-MainBtn.Size = UDim2.new(1, -16, 0, 35)
-MainBtn.Position = UDim2.new(0, 8, 0, 55)
+MainBtn.Size = UDim2.new(1, -16, 0, 32)
+MainBtn.Position = UDim2.new(0, 8, 0, 50)
 MainBtn.BackgroundColor3 = Color3.fromRGB(48, 48, 62)
 MainBtn.Text = "Main"
 MainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MainBtn.Font = Enum.Font.GothamBold
-MainBtn.TextSize = 14
+MainBtn.TextSize = 13
 MainBtn.ZIndex = 4
 MainBtn.Parent = TabContainer
 Instance.new("UICorner", MainBtn).CornerRadius = UDim.new(0, 8)
 MainBtn.MouseButton1Click:Connect(function() switchTab("Main") end)
 
--- Info Text
+local PlayerBtn = Instance.new("TextButton")
+PlayerBtn.Size = UDim2.new(1, -16, 0, 32)
+PlayerBtn.Position = UDim2.new(0, 8, 0, 90)
+PlayerBtn.BackgroundColor3 = Color3.fromRGB(48, 48, 62)
+PlayerBtn.Text = "Player"
+PlayerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+PlayerBtn.Font = Enum.Font.GothamBold
+PlayerBtn.TextSize = 13
+PlayerBtn.ZIndex = 4
+PlayerBtn.Parent = TabContainer
+Instance.new("UICorner", PlayerBtn).CornerRadius = UDim.new(0, 8)
+PlayerBtn.MouseButton1Click:Connect(function() switchTab("Player") end)
+
+-- Texto en Info
 local InfoText = Instance.new("TextLabel")
 InfoText.Size = UDim2.new(1, 0, 1, 0)
 InfoText.BackgroundTransparency = 1
@@ -414,20 +456,20 @@ InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 12
 InfoText.TextWrapped = true
 InfoText.ZIndex = 4
-InfoText.Text = "Creador: JoseAngel_Blox\n\nVersión: 2.8 (Delta Celular Edition)\n\nUPDATE: Sistema de FartezHub adaptado a pantalla táctil, auto-equipado de pesas y cero errores de consola."
+InfoText.Text = "Creador: JoseAngel_Blox\n\nVersión: 3.2 Mobile\n\n- Auto Farm con velocidad natural de tu personaje.\n- Opción para Ocultar Barra de Tiempo (1s, 1m, 5m, etc.) en 'Player'.\n- Botón 'JA' y mejoras de rendimiento mobile."
 InfoText.Parent = InfoPage
 
--- Generador de Toggles
-local function createToggle(name, posY, callback)
+-- Generador de Toggles Universal
+local function createToggle(parentPage, name, posY, callback)
     local container = Instance.new("TextButton")
-    container.Size = UDim2.new(1, 0, 0, 38)
+    container.Size = UDim2.new(1, -1, 0, 38)
     container.Position = UDim2.new(0, 0, 0, posY)
     container.BackgroundColor3 = Color3.fromRGB(42, 42, 54)
     container.BackgroundTransparency = 0.15
     container.Text = ""
     container.AutoButtonColor = false
     container.ZIndex = 4
-    container.Parent = MainPage
+    container.Parent = parentPage
     Instance.new("UICorner", container).CornerRadius = UDim.new(0, 8)
     
     local label = Instance.new("TextLabel")
@@ -479,40 +521,11 @@ local function createToggle(name, posY, callback)
 end
 
 -- =========================================================================
--- 4. REGISTRO DE BOTONES EN LA INTERFAZ
+-- 4. REGISTRO DE BOTONES EN PESTAÑA MAIN
 -- =========================================================================
 
-createToggle("Auto Kick", 0, function(state)
+createToggle(MainPage, "Auto Kick", 0, function(state)
     getgenv().AutoKick = state
     if state then
         task.spawn(function()
-            while getgenv().AutoKick do
-                pcall(function() KickEvent:FireServer(unpack(kickArgs)) end)
-                task.wait(0.05)
-            end
-        end)
-    end
-end)
-
-createToggle("Auto Farm (Safe Zone)", 44, function(state)
-    getgenv().AutoFarm = state
-    if state then
-        task.spawn(function()
-            while getgenv().AutoFarm do
-                pcall(function()
-                    KickEvent:FireServer(unpack(kickArgs))
-                    local char = LocalPlayer.Character
-                    if char and char:FindFirstChild("Humanoid") then
-                        char.Humanoid.WalkSpeed = getgenv().VelocidadFarm
-                        local areas = Workspace:FindFirstChild("Areas")
-                        if areas and areas:FindFirstChild("KickReady") then
-                            local safeZone = areas.KickReady
-                            if safeZone:IsA("BasePart") then
-                                char.Humanoid:MoveTo(safeZone.Position)
-                            elseif safeZone:IsA("Model") and safeZone.PrimaryPart then
-                                char.Humanoid:MoveTo(safeZone.PrimaryPart.Position)
-                            end
-                        end
-                    end
-                end)
-                task.wait(0.05
+            while getgenv().AutoK
