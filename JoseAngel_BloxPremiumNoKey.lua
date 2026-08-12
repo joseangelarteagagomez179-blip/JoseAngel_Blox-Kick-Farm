@@ -1,6 +1,6 @@
 -- ==========================================
 -- Script: JoseAngel_Blox premium no key
--- Versión: 1.2 (Script reparado corregido los Bugs y con más compatibilidad y optimización)
+-- Versión: 1.3 (Reparado, sistema Drag, optimización de Farm y parche de Auto Kick)
 -- ==========================================
 
 local Players = game:GetService("Players")
@@ -16,11 +16,12 @@ local LocalPlayer = Players.LocalPlayer
 -- ==========================================
 -- 1. CACHÉ DE REMOTOS Y VARIABLES (Seguro)
 -- ==========================================
-local Network = ReplicatedStorage:WaitForChild("Shared", 3) and ReplicatedStorage.Shared:WaitForChild("Packages", 3) and ReplicatedStorage.Shared.Packages:WaitForChild("Network", 3)
+-- Aumentamos el tiempo de espera a 5 segundos por si hay lag al cargar el juego
+local Network = ReplicatedStorage:WaitForChild("Shared", 5) and ReplicatedStorage.Shared:WaitForChild("Packages", 5) and ReplicatedStorage.Shared.Packages:WaitForChild("Network", 5)
 
-local KickEvent = Network and Network:WaitForChild("rev_KickEvent", 3)
-local MultiplierEvent = Network and Network:WaitForChild("rev_TaviMishkal", 3)
-local kickArgs = {1, 1}
+-- AHORA ES ref_KickEvent (RemoteFunction) según lo capturado en el RemoteSpy
+local KickFunction = Network and Network:WaitForChild("ref_KickEvent", 5)
+local MultiplierEvent = Network and Network:WaitForChild("rev_TaviMishkal", 5)
 
 -- Variables globales
 getgenv().AutoKick = false
@@ -99,15 +100,58 @@ local function collectCash()
 end
 
 -- ==========================================
+-- FUNCIÓN PARA ARRASTRAR GUI (Reemplaza Draggable)
+-- ==========================================
+local function MakeDraggable(gui)
+    local dragging
+    local dragInput
+    local dragStart
+    local startPos
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+
+    gui.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = gui.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    gui.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+end
+
+-- ==========================================
 -- 3. CREACIÓN DE LA GUI Y BOTÓN FLOTANTE
 -- ==========================================
-if CoreGui:FindFirstChild("JoseAngel_Blox_GUI") then
-    CoreGui.JoseAngel_Blox_GUI:Destroy()
-end
+-- Para compatibilidad, usamos pcall al buscar en CoreGui (algunos ejecutores fallan aquí)
+local success, oldGui = pcall(function() return CoreGui:FindFirstChild("JoseAngel_Blox_GUI") end)
+if success and oldGui then oldGui:Destroy() end
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "JoseAngel_Blox_GUI"
-ScreenGui.Parent = CoreGui
+-- Si falla ponerlo en CoreGui, lo ponemos en PlayerGui
+pcall(function() ScreenGui.Parent = CoreGui end)
+if ScreenGui.Parent == nil then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
 -- Botón Flotante para Abrir / Cerrar menú
 local ToggleMenuBtn = Instance.new("TextButton")
@@ -120,9 +164,9 @@ ToggleMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleMenuBtn.Font = Enum.Font.GothamBold
 ToggleMenuBtn.TextSize = 16
 ToggleMenuBtn.Active = true
-ToggleMenuBtn.Draggable = true
 ToggleMenuBtn.ZIndex = 15
 ToggleMenuBtn.Parent = ScreenGui
+MakeDraggable(ToggleMenuBtn) -- Usando el nuevo sistema de drag
 
 Instance.new("UICorner", ToggleMenuBtn).CornerRadius = UDim.new(1, 0)
 local BtnStroke = Instance.new("UIStroke")
@@ -137,8 +181,8 @@ MainFrame.Position = UDim2.new(0.5, -215, 0.5, -160)
 MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
-MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
+MakeDraggable(MainFrame) -- Usando el nuevo sistema de drag
 
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
@@ -174,7 +218,7 @@ local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, 0, 0, 28)
 TitleLabel.Position = UDim2.new(0, 0, 0, 4)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "JoseAngel_Blox premium v1.2"
+TitleLabel.Text = "JoseAngel_Blox premium v1.3"
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextSize = 18
 TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -283,9 +327,9 @@ InfoText.TextSize = 12
 InfoText.TextWrapped = true
 InfoText.ZIndex = 4
 InfoText.Text = "Creador: JoseAngel_Blox\n\n" ..
-                "Versión: 1.2\n\n" ..
-                "Update: Script reparado corregido los Bugs y con más compatibilidad y optimización\n\n" ..
-                "• Ejecutor compatible: Delta Executor."
+                "Versión: 1.3\n\n" ..
+                "Update: Solucionados problemas de movimiento, UI Dragging, optimización y parche del evento de patadas.\n\n" ..
+                "• Ejecutor compatible: Delta Executor y afines."
 InfoText.Parent = InfoPage
 
 -- ==========================================
@@ -359,9 +403,12 @@ createToggle(MainPage, "Auto Kick", 0, function(state)
         task.spawn(function()
             while getgenv().AutoKick do
                 pcall(function()
-                    if KickEvent then KickEvent:FireServer(unpack(kickArgs)) end
+                    if KickFunction then 
+                        -- Llamamos a la RemoteFunction con los argumentos descubiertos: true, tiempo, 1, tabla vacía
+                        KickFunction:InvokeServer(true, os.clock(), 1, {}) 
+                    end
                 end)
-                task.wait(0.05)
+                task.wait(0.1) -- Evitar sobrecarga en el servidor
             end
         end)
     end
@@ -373,22 +420,26 @@ createToggle(MainPage, "Auto Farm (Safe Zone)", 44, function(state)
         task.spawn(function()
             while getgenv().AutoFarm do
                 pcall(function()
-                    if KickEvent then KickEvent:FireServer(unpack(kickArgs)) end
+                    -- También actualizamos el RemoteFunction aquí por si acaso lo usabas al farmear
+                    if KickFunction then 
+                        KickFunction:InvokeServer(true, os.clock(), 1, {}) 
+                    end
                     local char = LocalPlayer.Character
-                    if char and char:FindFirstChild("Humanoid") then
+                    if char and char:FindFirstChild("Humanoid") and char:FindFirstChild("HumanoidRootPart") then
                         char.Humanoid.WalkSpeed = getgenv().VelocidadFarm
                         local areas = Workspace:FindFirstChild("Areas")
                         if areas and areas:FindFirstChild("KickReady") then
                             local safeZone = areas.KickReady
-                            if safeZone:IsA("BasePart") then
-                                char.Humanoid:MoveTo(safeZone.Position)
-                            elseif safeZone:IsA("Model") and safeZone.PrimaryPart then
-                                char.Humanoid:MoveTo(safeZone.PrimaryPart.Position)
+                            local targetPos = (safeZone:IsA("BasePart") and safeZone.Position) or (safeZone:IsA("Model") and safeZone.PrimaryPart and safeZone.PrimaryPart.Position)
+                            
+                            -- Corrección: Solo actualizar MoveTo si estamos a más de 5 studs, evita tartamudeo (stutter)
+                            if targetPos and (char.HumanoidRootPart.Position - targetPos).Magnitude > 5 then
+                                char.Humanoid:MoveTo(targetPos)
                             end
                         end
                     end
                 end)
-                task.wait(0.05)
+                task.wait(0.2) -- Reducido el spam de MoveTo para mayor estabilidad
             end
         end)
     else
@@ -474,17 +525,17 @@ createToggle(PlayerPage, "Mostrar FPS", 88, function(state)
     fpsLabel.Visible = state
 end)
 
-local lastTick = tick()
+local lastTime = os.clock() -- Reemplazo del obsoleto tick()
 local frameCount = 0
 
 RunService.RenderStepped:Connect(function()
     if getgenv().ShowFPS then
         frameCount = frameCount + 1
-        local currentTick = tick()
-        if currentTick - lastTick >= 1 then
+        local currentTime = os.clock()
+        if currentTime - lastTime >= 1 then
             fpsLabel.Text = "FPS: " .. frameCount
             frameCount = 0
-            lastTick = currentTick
+            lastTime = currentTime
         end
     end
 end)
