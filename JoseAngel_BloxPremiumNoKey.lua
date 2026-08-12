@@ -1,6 +1,6 @@
 -- ==========================================
 -- Script: JoseAngel_Blox premium no key
--- Versión: 1.3 (Reparado, sistema Drag, optimización de Farm y parche de Auto Kick)
+-- Versión: 1.4 (Auto Kick reparado según SimpleSpy, Drag sin memory leak, Anti-Lag optimizado)
 -- ==========================================
 
 local Players = game:GetService("Players")
@@ -14,12 +14,13 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
--- 1. CACHÉ DE REMOTOS Y VARIABLES (Seguro)
+-- 1. CACHÉ DE REMOTES Y VARIABLES (Seguro)
 -- ==========================================
--- Aumentamos el tiempo de espera a 5 segundos por si hay lag al cargar el juego
-local Network = ReplicatedStorage:WaitForChild("Shared", 5) and ReplicatedStorage.Shared:WaitForChild("Packages", 5) and ReplicatedStorage.Shared.Packages:WaitForChild("Network", 5)
+local Network = ReplicatedStorage:WaitForChild("Shared", 5) 
+    and ReplicatedStorage.Shared:WaitForChild("Packages", 5) 
+    and ReplicatedStorage.Shared.Packages:WaitForChild("Network", 5)
 
--- AHORA ES ref_KickEvent (RemoteFunction) según lo capturado en el RemoteSpy
+-- RemoteFunction confirmado por SimpleSpy
 local KickFunction = Network and Network:WaitForChild("ref_KickEvent", 5)
 local MultiplierEvent = Network and Network:WaitForChild("rev_TaviMishkal", 5)
 
@@ -34,6 +35,21 @@ getgenv().AutoCollectCash = false
 getgenv().InfiniteJump = false
 getgenv().AntiLag = false
 getgenv().ShowFPS = false
+
+-- ==========================================
+-- FUNCIÓN HELPER: Enviar Kick con argumentos correctos
+-- SimpleSpy capturó: { random_float, 1, os.time()+decimal }
+-- ==========================================
+local function sendKick()
+    if KickFunction then
+        pcall(function()
+            local arg1 = math.random()                -- 0.914863... → float aleatorio
+            local arg2 = 1                             -- siempre 1
+            local arg3 = os.time() + (tick() % 1)     -- 1786574651.170... → timestamp preciso
+            KickFunction:InvokeServer(arg1, arg2, arg3)
+        end)
+    end
+end
 
 -- ==========================================
 -- 2. AUTO COLLECT CASH
@@ -85,7 +101,7 @@ local function collectCash()
                     elseif slotPart:FindFirstChildWhichIsA("BasePart") then
                         targetCFrame = slotPart:FindFirstChildWhichIsA("BasePart").CFrame
                     end
-                    
+
                     if targetCFrame then
                         pcall(function()
                             ForcedTP(targetCFrame + Vector3.new(0, 1.5, 0))
@@ -100,36 +116,44 @@ local function collectCash()
 end
 
 -- ==========================================
--- FUNCIÓN PARA ARRASTRAR GUI (Reemplaza Draggable)
+-- FUNCIÓN PARA ARRASTRAR GUI (Sin memory leak)
 -- ==========================================
 local function MakeDraggable(gui)
-    local dragging
-    local dragInput
-    local dragStart
-    local startPos
+    local dragging = false
+    local dragInput = nil
+    local dragStart = nil
+    local startPos = nil
 
     local function update(input)
         local delta = input.Position - dragStart
-        gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        gui.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
     end
 
     gui.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 
+            or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = gui.Position
-
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
         end
     end)
 
     gui.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseMovement 
+            or input.UserInputType == Enum.UserInputType.Touch then
             dragInput = input
+        end
+    end)
+
+    -- ✅ FIX: InputEnded global en vez de conectar dentro de InputBegan
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 
+            or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+            dragInput = nil
         end
     end)
 
@@ -143,13 +167,12 @@ end
 -- ==========================================
 -- 3. CREACIÓN DE LA GUI Y BOTÓN FLOTANTE
 -- ==========================================
--- Para compatibilidad, usamos pcall al buscar en CoreGui (algunos ejecutores fallan aquí)
 local success, oldGui = pcall(function() return CoreGui:FindFirstChild("JoseAngel_Blox_GUI") end)
 if success and oldGui then oldGui:Destroy() end
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "JoseAngel_Blox_GUI"
--- Si falla ponerlo en CoreGui, lo ponemos en PlayerGui
+ScreenGui.ResetOnSpawn = false
 pcall(function() ScreenGui.Parent = CoreGui end)
 if ScreenGui.Parent == nil then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
@@ -166,7 +189,7 @@ ToggleMenuBtn.TextSize = 16
 ToggleMenuBtn.Active = true
 ToggleMenuBtn.ZIndex = 15
 ToggleMenuBtn.Parent = ScreenGui
-MakeDraggable(ToggleMenuBtn) -- Usando el nuevo sistema de drag
+MakeDraggable(ToggleMenuBtn)
 
 Instance.new("UICorner", ToggleMenuBtn).CornerRadius = UDim.new(1, 0)
 local BtnStroke = Instance.new("UIStroke")
@@ -181,8 +204,9 @@ MainFrame.Position = UDim2.new(0.5, -215, 0.5, -160)
 MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
+MainFrame.Visible = false
 MainFrame.Parent = ScreenGui
-MakeDraggable(MainFrame) -- Usando el nuevo sistema de drag
+MakeDraggable(MainFrame)
 
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
@@ -218,7 +242,7 @@ local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, 0, 0, 28)
 TitleLabel.Position = UDim2.new(0, 0, 0, 4)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "JoseAngel_Blox premium v1.3"
+TitleLabel.Text = "JoseAngel_Blox premium v1.4"
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextSize = 18
 TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -230,7 +254,7 @@ TitleGradient.Parent = TitleLabel
 
 task.spawn(function()
     local offsetHue = 0
-    while task.wait() do
+    while task.wait(0.05) do
         offsetHue = (offsetHue + 0.020) % 1
         local keypoints = {}
         for i = 0, 10 do
@@ -277,7 +301,7 @@ MainPage.Position = UDim2.new(0, 8, 0, 8)
 MainPage.BackgroundTransparency = 1
 MainPage.Visible = false
 MainPage.ScrollBarThickness = 3
-MainPage.CanvasSize = UDim2.new(0, 0, 0, 200)
+MainPage.CanvasSize = UDim2.new(0, 0, 0, 220)
 MainPage.ZIndex = 4
 MainPage.Parent = ContentContainer
 
@@ -327,9 +351,10 @@ InfoText.TextSize = 12
 InfoText.TextWrapped = true
 InfoText.ZIndex = 4
 InfoText.Text = "Creador: JoseAngel_Blox\n\n" ..
-                "Versión: 1.3\n\n" ..
-                "Update: Solucionados problemas de movimiento, UI Dragging, optimización y parche del evento de patadas.\n\n" ..
-                "• Ejecutor compatible: Delta Executor y afines."
+    "Versión: 1.4\n\n" ..
+    "Update: Auto Kick reparado (argumentos SimpleSpy), " ..
+    "Drag sin memory leak, Anti-Lag optimizado, FPS estable.\n\n" ..
+    "• Ejecutor compatible: Delta Executor y afines."
 InfoText.Parent = InfoPage
 
 -- ==========================================
@@ -346,7 +371,7 @@ local function createToggle(parent, name, posY, callback)
     container.ZIndex = 4
     container.Parent = parent
     Instance.new("UICorner", container).CornerRadius = UDim.new(0, 8)
-    
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -65, 1, 0)
     label.Position = UDim2.new(0, 12, 0, 0)
@@ -358,7 +383,7 @@ local function createToggle(parent, name, posY, callback)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.ZIndex = 5
     label.Parent = container
-    
+
     local switchBG = Instance.new("Frame")
     switchBG.Size = UDim2.new(0, 46, 0, 24)
     switchBG.Position = UDim2.new(1, -56, 0.5, -12)
@@ -366,7 +391,7 @@ local function createToggle(parent, name, posY, callback)
     switchBG.ZIndex = 5
     switchBG.Parent = container
     Instance.new("UICorner", switchBG).CornerRadius = UDim.new(1, 0)
-    
+
     local knob = Instance.new("Frame")
     knob.Size = UDim2.new(0, 18, 0, 18)
     knob.Position = UDim2.new(0, 3, 0.5, -9)
@@ -374,10 +399,10 @@ local function createToggle(parent, name, posY, callback)
     knob.ZIndex = 6
     knob.Parent = switchBG
     Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
-    
+
     local tweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
     local state = false
-    
+
     container.MouseButton1Click:Connect(function()
         state = not state
         if state then
@@ -397,49 +422,42 @@ end
 -- 5. TOGGLES: MAIN & PLAYER
 -- ==========================================
 
+-- ✅ AUTO KICK CORREGIDO — Argumentos reales de SimpleSpy
 createToggle(MainPage, "Auto Kick", 0, function(state)
     getgenv().AutoKick = state
     if state then
         task.spawn(function()
             while getgenv().AutoKick do
-                pcall(function()
-                    if KickFunction then 
-                        -- Llamamos a la RemoteFunction con los argumentos descubiertos: true, tiempo, 1, tabla vacía
-                        KickFunction:InvokeServer(true, os.clock(), 1, {}) 
-                    end
-                end)
-                task.wait(0.1) -- Evitar sobrecarga en el servidor
+                sendKick()
+                task.wait(0.5)
             end
         end)
     end
 end)
 
+-- ✅ AUTO FARM CORREGIDO — Usa sendKick() helper
 createToggle(MainPage, "Auto Farm (Safe Zone)", 44, function(state)
     getgenv().AutoFarm = state
     if state then
         task.spawn(function()
             while getgenv().AutoFarm do
                 pcall(function()
-                    -- También actualizamos el RemoteFunction aquí por si acaso lo usabas al farmear
-                    if KickFunction then 
-                        KickFunction:InvokeServer(true, os.clock(), 1, {}) 
-                    end
+                    sendKick()
                     local char = LocalPlayer.Character
                     if char and char:FindFirstChild("Humanoid") and char:FindFirstChild("HumanoidRootPart") then
                         char.Humanoid.WalkSpeed = getgenv().VelocidadFarm
                         local areas = Workspace:FindFirstChild("Areas")
                         if areas and areas:FindFirstChild("KickReady") then
                             local safeZone = areas.KickReady
-                            local targetPos = (safeZone:IsA("BasePart") and safeZone.Position) or (safeZone:IsA("Model") and safeZone.PrimaryPart and safeZone.PrimaryPart.Position)
-                            
-                            -- Corrección: Solo actualizar MoveTo si estamos a más de 5 studs, evita tartamudeo (stutter)
+                            local targetPos = (safeZone:IsA("BasePart") and safeZone.Position)
+                                or (safeZone:IsA("Model") and safeZone.PrimaryPart and safeZone.PrimaryPart.Position)
                             if targetPos and (char.HumanoidRootPart.Position - targetPos).Magnitude > 5 then
                                 char.Humanoid:MoveTo(targetPos)
                             end
                         end
                     end
                 end)
-                task.wait(0.2) -- Reducido el spam de MoveTo para mayor estabilidad
+                task.wait(0.2)
             end
         end)
     else
@@ -490,15 +508,17 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
+-- ✅ ANTI-LAG CORREGIDO — Solo itera Workspace, no todo game
 createToggle(PlayerPage, "Anti Lag", 44, function(state)
     getgenv().AntiLag = state
     if state then
         pcall(function()
             settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-            for _, v in pairs(game:GetDescendants()) do
-                if v:IsA("BasePart") then
+            for _, v in ipairs(Workspace:GetDescendants()) do
+                if v:IsA("BasePart") and v.Material ~= Enum.Material.SmoothPlastic then
                     v.Material = Enum.Material.SmoothPlastic
-                elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") then
+                elseif v:IsA("ParticleEmitter") or v:IsA("Trail") 
+                    or v:IsA("Smoke") or v:IsA("Fire") then
                     v.Enabled = false
                 end
             end
@@ -506,6 +526,7 @@ createToggle(PlayerPage, "Anti Lag", 44, function(state)
     end
 end)
 
+-- ✅ FPS DISPLAY — Con task.wait estable en vez de RenderStepped spam
 local fpsLabel = Instance.new("TextLabel")
 fpsLabel.Name = "FPSDisplay"
 fpsLabel.Size = UDim2.new(0, 90, 0, 26)
@@ -523,19 +544,20 @@ Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0, 6)
 createToggle(PlayerPage, "Mostrar FPS", 88, function(state)
     getgenv().ShowFPS = state
     fpsLabel.Visible = state
-end)
-
-local lastTime = os.clock() -- Reemplazo del obsoleto tick()
-local frameCount = 0
-
-RunService.RenderStepped:Connect(function()
-    if getgenv().ShowFPS then
-        frameCount = frameCount + 1
-        local currentTime = os.clock()
-        if currentTime - lastTime >= 1 then
-            fpsLabel.Text = "FPS: " .. frameCount
-            frameCount = 0
-            lastTime = currentTime
-        end
+    if state then
+        task.spawn(function()
+            local frames = 0
+            local lastCheck = os.clock()
+            while getgenv().ShowFPS do
+                RunService.RenderStepped:Wait()
+                frames = frames + 1
+                local now = os.clock()
+                if now - lastCheck >= 1 then
+                    fpsLabel.Text = "FPS: " .. frames
+                    frames = 0
+                    lastCheck = now
+                end
+            end
+        end)
     end
 end)
