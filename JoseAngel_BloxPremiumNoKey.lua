@@ -1,6 +1,6 @@
 -- ==========================================
 -- Script: JoseAngel_Blox premium no key
--- Versión: Delta Executor Compatible (v1.1)
+-- Versión: 1.2 (Script reparado corregido los Bugs y con más compatibilidad y optimización)
 -- ==========================================
 
 local Players = game:GetService("Players")
@@ -14,11 +14,12 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
--- 1. CACHÉ DE REMOTOS Y VARIABLES
+-- 1. CACHÉ DE REMOTOS Y VARIABLES (Seguro)
 -- ==========================================
-local Network = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network")
-local KickEvent = Network:WaitForChild("rev_KickEvent")
-local MultiplierEvent = Network:WaitForChild("rev_TaviMishkal")
+local Network = ReplicatedStorage:WaitForChild("Shared", 3) and ReplicatedStorage.Shared:WaitForChild("Packages", 3) and ReplicatedStorage.Shared.Packages:WaitForChild("Network", 3)
+
+local KickEvent = Network and Network:WaitForChild("rev_KickEvent", 3)
+local MultiplierEvent = Network and Network:WaitForChild("rev_TaviMishkal", 3)
 local kickArgs = {1, 1}
 
 -- Variables globales
@@ -42,7 +43,7 @@ local function ForcedTP(targetCFrame)
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if hrp then
-        hrp.Velocity = Vector3.new(0, 0, 0)
+        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
         hrp.CFrame = targetCFrame
     end
 end
@@ -70,7 +71,7 @@ local function collectCash()
 
     if lockedPlot then
         local buttonsFolder = lockedPlot:FindFirstChild("Buttons")
-        if buttonsFolder then
+        if buttonsFolder and Network and Network:FindFirstChild("rev_B_Collect") then
             for i = 1, 30 do
                 if not getgenv().AutoCollectCash then break end
                 local slotPart = buttonsFolder:FindFirstChild("Slot" .. i)
@@ -108,7 +109,7 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "JoseAngel_Blox_GUI"
 ScreenGui.Parent = CoreGui
 
--- Botón Flotante para Abrir / Cerrar menú (Draggable en móvil)
+-- Botón Flotante para Abrir / Cerrar menú
 local ToggleMenuBtn = Instance.new("TextButton")
 ToggleMenuBtn.Name = "ToggleMenuBtn"
 ToggleMenuBtn.Size = UDim2.new(0, 48, 0, 48)
@@ -147,37 +148,20 @@ MainCorner.Parent = MainFrame
 ToggleMenuBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
     if MainFrame.Visible then
-        BtnStroke.Color = Color3.fromRGB(45, 200, 75) -- Verde cuando está abierto
+        BtnStroke.Color = Color3.fromRGB(45, 200, 75)
     else
-        BtnStroke.Color = Color3.fromRGB(190, 45, 45) -- Rojo cuando está cerrado
+        BtnStroke.Color = Color3.fromRGB(190, 45, 45)
     end
 end)
 
--- Fondo
-local BackgroundImage = Instance.new("ImageLabel")
-BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
-BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
-BackgroundImage.BackgroundTransparency = 1
-BackgroundImage.Image = "rbxthumb://type=Asset&id=130801971957660&w=720&h=720"
-BackgroundImage.ScaleType = Enum.ScaleType.Crop
-BackgroundImage.ImageTransparency = 0
-BackgroundImage.ZIndex = 1
-BackgroundImage.Parent = MainFrame
-
-local BgCorner = Instance.new("UICorner")
-BgCorner.CornerRadius = UDim.new(0, 14)
-BgCorner.Parent = BackgroundImage
-
+-- Fondo y Estética
 local DarkOverlay = Instance.new("Frame")
 DarkOverlay.Size = UDim2.new(1, 0, 1, 0)
 DarkOverlay.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
 DarkOverlay.BackgroundTransparency = 0.45
 DarkOverlay.ZIndex = 2
 DarkOverlay.Parent = MainFrame
-
-local OverlayCorner = Instance.new("UICorner")
-OverlayCorner.CornerRadius = UDim.new(0, 14)
-OverlayCorner.Parent = DarkOverlay
+Instance.new("UICorner", DarkOverlay).CornerRadius = UDim.new(0, 14)
 
 -- Cabecera
 local HeaderFrame = Instance.new("Frame")
@@ -190,7 +174,7 @@ local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, 0, 0, 28)
 TitleLabel.Position = UDim2.new(0, 0, 0, 4)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "JoseAngel_Blox premium no key v1.1"
+TitleLabel.Text = "JoseAngel_Blox premium v1.2"
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextSize = 18
 TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -200,7 +184,6 @@ TitleLabel.Parent = HeaderFrame
 local TitleGradient = Instance.new("UIGradient")
 TitleGradient.Parent = TitleLabel
 
--- Arcoíris fluido y rápido
 task.spawn(function()
     local offsetHue = 0
     while task.wait() do
@@ -215,18 +198,7 @@ task.spawn(function()
     end
 end)
 
-local SubTitleLabel = Instance.new("TextLabel")
-SubTitleLabel.Size = UDim2.new(1, 0, 0, 18)
-SubTitleLabel.Position = UDim2.new(0, 0, 0, 28)
-SubTitleLabel.BackgroundTransparency = 1
-SubTitleLabel.Text = "Creado por JoseAngel_Blox"
-SubTitleLabel.TextColor3 = Color3.fromRGB(190, 190, 200)
-SubTitleLabel.Font = Enum.Font.Gotham
-SubTitleLabel.TextSize = 12
-SubTitleLabel.ZIndex = 3
-SubTitleLabel.Parent = HeaderFrame
-
--- Pestañas
+-- Contenedores de Pestañas
 local TabContainer = Instance.new("Frame")
 TabContainer.Size = UDim2.new(0, 110, 1, -60)
 TabContainer.Position = UDim2.new(0, 10, 0, 55)
@@ -281,47 +253,25 @@ local function switchTab(tab)
     PlayerPage.Visible = (tab == "Player")
 end
 
--- Botones Pestañas
-local InfoBtn = Instance.new("TextButton")
-InfoBtn.Size = UDim2.new(1, -16, 0, 35)
-InfoBtn.Position = UDim2.new(0, 8, 0, 10)
-InfoBtn.BackgroundColor3 = Color3.fromRGB(48, 48, 62)
-InfoBtn.Text = "Info"
-InfoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-InfoBtn.Font = Enum.Font.GothamBold
-InfoBtn.TextSize = 14
-InfoBtn.ZIndex = 4
-InfoBtn.Parent = TabContainer
-Instance.new("UICorner", InfoBtn).CornerRadius = UDim.new(0, 8)
-InfoBtn.MouseButton1Click:Connect(function() switchTab("Info") end)
+local function createTabButton(name, posY, tabName)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -16, 0, 35)
+    btn.Position = UDim2.new(0, 8, 0, posY)
+    btn.BackgroundColor3 = Color3.fromRGB(48, 48, 62)
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 14
+    btn.ZIndex = 4
+    btn.Parent = TabContainer
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    btn.MouseButton1Click:Connect(function() switchTab(tabName) end)
+end
 
-local MainBtn = Instance.new("TextButton")
-MainBtn.Size = UDim2.new(1, -16, 0, 35)
-MainBtn.Position = UDim2.new(0, 8, 0, 55)
-MainBtn.BackgroundColor3 = Color3.fromRGB(48, 48, 62)
-MainBtn.Text = "Main"
-MainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MainBtn.Font = Enum.Font.GothamBold
-MainBtn.TextSize = 14
-MainBtn.ZIndex = 4
-MainBtn.Parent = TabContainer
-Instance.new("UICorner", MainBtn).CornerRadius = UDim.new(0, 8)
-MainBtn.MouseButton1Click:Connect(function() switchTab("Main") end)
+createTabButton("Info", 10, "Info")
+createTabButton("Main", 55, "Main")
+createTabButton("Player", 100, "Player")
 
-local PlayerBtn = Instance.new("TextButton")
-PlayerBtn.Size = UDim2.new(1, -16, 0, 35)
-PlayerBtn.Position = UDim2.new(0, 8, 0, 100)
-PlayerBtn.BackgroundColor3 = Color3.fromRGB(48, 48, 62)
-PlayerBtn.Text = "Player"
-PlayerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-PlayerBtn.Font = Enum.Font.GothamBold
-PlayerBtn.TextSize = 14
-PlayerBtn.ZIndex = 4
-PlayerBtn.Parent = TabContainer
-Instance.new("UICorner", PlayerBtn).CornerRadius = UDim.new(0, 8)
-PlayerBtn.MouseButton1Click:Connect(function() switchTab("Player") end)
-
--- Info Text
 local InfoText = Instance.new("TextLabel")
 InfoText.Size = UDim2.new(1, 0, 1, 0)
 InfoText.BackgroundTransparency = 1
@@ -332,18 +282,10 @@ InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 12
 InfoText.TextWrapped = true
 InfoText.ZIndex = 4
-InfoText.Text = "Nombre del Creador: JoseAngel_Blox\n\n" ..
-                "Fecha de lanzamiento: 02/08/2026\n\n" ..
-                "Versión: 1.1 (Delta Compatible)\n\n" ..
-                "Características:\n" ..
-                "- Auto Kick\n" ..
-                "- Auto Farm (Safe Zone)\n" ..
-                "- Multiplier x2\n" ..
-                "- Auto Collect Cash\n" ..
-                "- Infinite Jump\n" ..
-                "- Anti Lag\n" ..
-                "- Mostrar FPS\n\n" ..
-                "Ejecutor: Delta Executor"
+InfoText.Text = "Creador: JoseAngel_Blox\n\n" ..
+                "Versión: 1.2\n\n" ..
+                "Update: Script reparado corregido los Bugs y con más compatibilidad y optimización\n\n" ..
+                "• Ejecutor compatible: Delta Executor."
 InfoText.Parent = InfoPage
 
 -- ==========================================
@@ -405,35 +347,33 @@ local function createToggle(parent, name, posY, callback)
         end
         callback(state)
     end)
-    
-    return container
 end
 
 -- ==========================================
--- 5. TOGGLES: PESTAÑA MAIN
+-- 5. TOGGLES: MAIN & PLAYER
 -- ==========================================
 
--- Auto Kick
 createToggle(MainPage, "Auto Kick", 0, function(state)
     getgenv().AutoKick = state
     if state then
         task.spawn(function()
             while getgenv().AutoKick do
-                pcall(function() KickEvent:FireServer(unpack(kickArgs)) end)
+                pcall(function()
+                    if KickEvent then KickEvent:FireServer(unpack(kickArgs)) end
+                end)
                 task.wait(0.05)
             end
         end)
     end
 end)
 
--- Auto Farm
 createToggle(MainPage, "Auto Farm (Safe Zone)", 44, function(state)
     getgenv().AutoFarm = state
     if state then
         task.spawn(function()
             while getgenv().AutoFarm do
                 pcall(function()
-                    KickEvent:FireServer(unpack(kickArgs))
+                    if KickEvent then KickEvent:FireServer(unpack(kickArgs)) end
                     local char = LocalPlayer.Character
                     if char and char:FindFirstChild("Humanoid") then
                         char.Humanoid.WalkSpeed = getgenv().VelocidadFarm
@@ -444,11 +384,6 @@ createToggle(MainPage, "Auto Farm (Safe Zone)", 44, function(state)
                                 char.Humanoid:MoveTo(safeZone.Position)
                             elseif safeZone:IsA("Model") and safeZone.PrimaryPart then
                                 char.Humanoid:MoveTo(safeZone.PrimaryPart.Position)
-                            else
-                                local parte = safeZone:FindFirstChildWhichIsA("BasePart", true)
-                                if parte then
-                                    char.Humanoid:MoveTo(parte.Position)
-                                end
                             end
                         end
                     end
@@ -463,20 +398,20 @@ createToggle(MainPage, "Auto Farm (Safe Zone)", 44, function(state)
     end
 end)
 
--- Multiplier x2
 createToggle(MainPage, "Multiplier x2", 88, function(state)
     getgenv().MultiplierX2 = state
     if state then
         task.spawn(function()
             while getgenv().MultiplierX2 do
-                pcall(function() MultiplierEvent:FireServer() end)
+                pcall(function()
+                    if MultiplierEvent then MultiplierEvent:FireServer() end
+                end)
                 task.wait(2)
             end
         end)
     end
 end)
 
--- Auto Collect Cash
 createToggle(MainPage, "Auto Collect Cash 💰", 132, function(state)
     getgenv().AutoCollectCash = state
     if state then
@@ -491,11 +426,6 @@ createToggle(MainPage, "Auto Collect Cash 💰", 132, function(state)
     end
 end)
 
--- ==========================================
--- 6. TOGGLES: PESTAÑA PLAYER
--- ==========================================
-
--- Infinite Jump
 createToggle(PlayerPage, "Infinite Jump", 0, function(state)
     getgenv().InfiniteJump = state
 end)
@@ -509,7 +439,6 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- Anti Lag
 createToggle(PlayerPage, "Anti Lag", 44, function(state)
     getgenv().AntiLag = state
     if state then
@@ -518,9 +447,7 @@ createToggle(PlayerPage, "Anti Lag", 44, function(state)
             for _, v in pairs(game:GetDescendants()) do
                 if v:IsA("BasePart") then
                     v.Material = Enum.Material.SmoothPlastic
-                elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") then
-                    v.Enabled = false
-                elseif v:IsA("PostEffect") then
+                elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") then
                     v.Enabled = false
                 end
             end
@@ -528,7 +455,6 @@ createToggle(PlayerPage, "Anti Lag", 44, function(state)
     end
 end)
 
--- Mostrar FPS
 local fpsLabel = Instance.new("TextLabel")
 fpsLabel.Name = "FPSDisplay"
 fpsLabel.Size = UDim2.new(0, 90, 0, 26)
